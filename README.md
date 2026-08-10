@@ -3,6 +3,8 @@
 COM3D2.5 のメインカメラに多彩なポストエフェクトを適用し、GUI から制御するプラグイン。
 **COM3D2.5 (Unity 2022) 専用**（COM3D2 2.0 には対応しない）。
 
+https://github.com/user-attachments/assets/becec22f-b537-4a2d-b0e2-8fc74a3debcb
+
 ゲーム内蔵のイメージエフェクトに加え、同梱のシェーダーバンドルによる
 撮影向けエフェクトを合計 40 種類以上収録している。
 
