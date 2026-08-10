@@ -30,7 +30,7 @@ namespace COM3D25.PostEffects.Plugin
 		// 頭部 (顔・髪・頭アクセ) にリムライトを乗せない
 		public bool excludeFace = true;
 		// excludeFace 時でも髪 (髪・帽子・髪アクセ) には適用する
-		public bool applyHair = true;
+		public bool applyHair = false;
 		// 0=マスクなし / 1=キャラ除外 / 2=キャラのみ
 		public int maskMode = 2;
 
