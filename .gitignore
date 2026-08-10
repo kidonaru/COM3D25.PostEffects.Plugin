@@ -1,0 +1,15 @@
+.env
+.vscode
+source/.vs
+source/*/.vs
+source/*/bin
+source/*/obj
+*.pdb
+output/
+.codegraph/
+
+# ビルド成果物。build.bat が毎回生成するため追跡しない
+UnityInjector/*.dll
+
+# シェーダーバンドルのビルドログ (UnityProject の batchmode 実行時に生成)
+bundle_build.log
