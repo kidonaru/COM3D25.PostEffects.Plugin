@@ -1,0 +1,13 @@
+# Unity 生成物
+/Library/
+/Temp/
+/Obj/
+/Logs/
+/UserSettings/
+/Build/
+/Builds/
+*.csproj
+*.sln
+
+# バンドルビルド出力 (デプロイ先は UnityInjector/Config/PostEffects/Shaders で管理)
+/AssetBundles/
