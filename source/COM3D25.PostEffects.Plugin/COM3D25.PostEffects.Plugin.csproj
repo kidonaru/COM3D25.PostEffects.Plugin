@@ -197,6 +197,7 @@
     <Compile Include="MTEUtils\IGUIWindow.cs" />
     <Compile Include="MTEUtils\IScreenScalableWindow.cs" />
     <Compile Include="MTEUtils\ITabVisibleWindow.cs" />
+    <Compile Include="MTEUtils\InputRemapperClient.cs" />
     <Compile Include="MTEUtils\Extensions.cs" />
     <Compile Include="MTEUtils\GUICache.cs" />
     <Compile Include="MTEUtils\GUIComboBox.cs" />
