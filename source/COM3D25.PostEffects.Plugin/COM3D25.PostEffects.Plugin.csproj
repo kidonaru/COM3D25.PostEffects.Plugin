@@ -189,9 +189,14 @@
     <Compile Include="Manager\WindowManager.cs" />
     <Compile Include="MTEUtils\ColorExtensions.cs" />
     <Compile Include="MTEUtils\ColorPickerWindow.cs" />
+    <Compile Include="MTEUtils\ComboBoxPopupWindow.cs" />
     <Compile Include="MTEUtils\CurveData.cs" />
     <Compile Include="MTEUtils\CurveEditorWindow.cs" />
+    <Compile Include="MTEUtils\DockableWindowBase.cs" />
+    <Compile Include="MTEUtils\DockingClient.cs" />
     <Compile Include="MTEUtils\IGUIWindow.cs" />
+    <Compile Include="MTEUtils\IScreenScalableWindow.cs" />
+    <Compile Include="MTEUtils\ITabVisibleWindow.cs" />
     <Compile Include="MTEUtils\Extensions.cs" />
     <Compile Include="MTEUtils\GUICache.cs" />
     <Compile Include="MTEUtils\GUIComboBox.cs" />
@@ -202,8 +207,12 @@
     <Compile Include="MTEUtils\MainThreadDispatcher.cs" />
     <Compile Include="MTEUtils\ManagerRegistry.cs" />
     <Compile Include="MTEUtils\NaturalStringComparer.cs" />
+    <Compile Include="MTEUtils\ResizeCursor.cs" />
+    <Compile Include="MTEUtils\TabBarDrawer.cs" />
     <Compile Include="MTEUtils\TexturePickerWindow.cs" />
     <Compile Include="MTEUtils\TransformCache.cs" />
+    <Compile Include="MTEUtils\WindowManagerBase.cs" />
+    <Compile Include="MTEUtils\WindowResizeController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="COM3D25.PostEffects.Plugin.cs" />
     <Compile Include="Config.cs" />

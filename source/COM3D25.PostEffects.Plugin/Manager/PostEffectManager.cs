@@ -8,6 +8,10 @@ namespace COM3D25.PostEffects.Plugin
     {
         public List<EffectControllerBase> controllers = new List<EffectControllerBase>();
 
+        // 全エフェクトの一時的な無効化スイッチ。
+        // 各エフェクトの有効状態は保ったまま適用だけを止めるため、保存対象にはしない
+        public bool effectsEnabled = true;
+
         // 前フレームで適用していたかをコントローラごとに記録し、無効化されたフレームで復元する
         private HashSet<EffectControllerBase> _appliedControllers = new HashSet<EffectControllerBase>();
 
@@ -126,7 +130,7 @@ namespace COM3D25.PostEffects.Plugin
             {
                 try
                 {
-                    if (controller.effectEnabled)
+                    if (effectsEnabled && controller.effectEnabled)
                     {
                         controller.Apply();
                         _appliedControllers.Add(controller);

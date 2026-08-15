@@ -1,18 +1,17 @@
-using System.Collections.Generic;
 using COM3D2.MotionTimelineEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace COM3D25.PostEffects.Plugin
 {
-    public class WindowManager : ManagerBase
+    /// <summary>
+    /// 他の Manager と違い ManagerBase ではなく MTEUtils の WindowManagerBase を継承する。
+    /// ウィンドウ管理の実装を EditorWindow プラグインと共有するための例外
+    /// </summary>
+    public class WindowManager : WindowManagerBase
     {
         public MainWindow mainWindow = null;
 
-        public List<IGUIWindow> windows = new List<IGUIWindow>();
-
-        private int _screenWidth = 0;
-        private int _screenHeight = 0;
         private bool _isCameraControlDisabled = false;
         private bool _isUIInputDisabled = false;
         private bool _isGizmoLocked = false;
@@ -38,6 +37,8 @@ namespace COM3D25.PostEffects.Plugin
 
         public override void Init()
         {
+            base.Init();
+
             mainWindow = new MainWindow();
             AddWindow(mainWindow);
 
@@ -45,33 +46,14 @@ namespace COM3D25.PostEffects.Plugin
             AddWindow(ColorPickerWindow.instance);
             AddWindow(CurveEditorWindow.instance);
             AddWindow(TexturePickerWindow.instance);
+
+            // ComboBoxPopupWindow はホストの描画中に開閉が確定するため、
+            // コンボボックスを持つウィンドウより後に登録すること (同フレームで描画させる)
+            AddWindow(ComboBoxPopupWindow.instance);
         }
 
-        public void AddWindow(IGUIWindow window)
+        protected override void OnAfterUpdate()
         {
-            windows.Add(window);
-            window.Init();
-        }
-
-        public override void Update()
-        {
-            bool isScreenSizeChanged = _screenWidth != Screen.width || _screenHeight != Screen.height;
-            if (isScreenSizeChanged)
-            {
-                foreach (var window in windows)
-                {
-                    window.OnScreenSizeChanged();
-                }
-
-                _screenWidth = Screen.width;
-                _screenHeight = Screen.height;
-            }
-
-            foreach (var window in windows)
-            {
-                window.Update();
-            }
-
             UpdateInputBlock();
         }
 
@@ -222,43 +204,16 @@ namespace COM3D25.PostEffects.Plugin
             _isCameraDragFromOutside = false;
         }
 
-        public override void OnLoad()
-        {
-            foreach (var window in windows)
-            {
-                window.OnLoad();
-            }
-        }
-
-        public override void OnPluginDisable()
+        protected override void OnBeforeCloseWindows()
         {
             RestoreInputBlock();
-
-            foreach (var window in windows)
-            {
-                window.Close();
-            }
         }
 
         public override void OnChangedSceneLevel(Scene scene, LoadSceneMode sceneMode)
         {
             RestoreInputBlock();
 
-            foreach (var window in windows)
-            {
-                window.OnChangedSceneLevel(scene, sceneMode);
-            }
-        }
-
-        public void OnGUI()
-        {
-            // 組み込み GUIStyle の複製は OnGUI 内でしか行えないためここで初期化する
-            GUIView.InitStyles();
-
-            foreach (var window in windows)
-            {
-                window.OnGUI();
-            }
+            base.OnChangedSceneLevel(scene, sceneMode);
         }
     }
 }

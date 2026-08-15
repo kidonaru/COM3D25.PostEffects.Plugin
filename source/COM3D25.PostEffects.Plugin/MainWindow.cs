@@ -2,22 +2,16 @@ using System;
 using System.Collections.Generic;
 using COM3D2.MotionTimelineEditor;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace COM3D25.PostEffects.Plugin
 {
-    public class MainWindow : IGUIWindow
+    public class MainWindow : DockableWindowBase
     {
         public readonly static int WINDOW_ID = 815377;
 
-        // ウィンドウの最小サイズ。エフェクト行が折り返さない幅を下限にする
-        public readonly static int MIN_WINDOW_WIDTH = 400;
-        public readonly static int MIN_WINDOW_HEIGHT = 320;
-
-        public readonly static int HEADER_HEIGHT = 20;
-
-        // リサイズグリップを置く下端の高さ
-        public readonly static int FOOTER_HEIGHT = 20;
+        // ウィンドウの最小サイズ。カテゴリ行 (コンボ + ラベル + リセット) が折り返さない幅を下限にする
+        public readonly static int MIN_WINDOW_WIDTH = 300;
+        public readonly static int MIN_WINDOW_HEIGHT = 200;
 
         private static PostEffectsPlugin plugin => PostEffectsPlugin.instance;
         private static Config config => ConfigManager.instance.config;
@@ -25,21 +19,10 @@ namespace COM3D25.PostEffects.Plugin
         private static PostEffectManager postEffectManager => PostEffectManager.instance;
         private static PresetManager presetManager => PresetManager.instance;
 
-        public int windowIndex { get; set; }
-        public bool isShowWnd { get; set; }
-
-        private Rect _windowRect;
-        public Rect windowRect
-        {
-            get => _windowRect;
-            set => _windowRect = value;
-        }
-
-        private int _windowWidth = MIN_WINDOW_WIDTH;
-        private int _windowHeight = MIN_WINDOW_HEIGHT;
-        private bool _initializedGUI = false;
-
-        private GUIView.DragInfo _windowSizeDragInfo = new GUIView.DragInfo();
+        protected override int windowId => WINDOW_ID;
+        protected override string windowTitle => PluginInfo.WindowName;
+        protected override int minWidth => MIN_WINDOW_WIDTH;
+        protected override int minHeight => MIN_WINDOW_HEIGHT;
 
         // 一覧の絞り込み用カテゴリ選択
         private GUIComboBox<EffectCategory> _categoryComboBox = new GUIComboBox<EffectCategory>
@@ -56,200 +39,101 @@ namespace COM3D25.PostEffects.Plugin
         private string _presetName = "";
 
         private GUIView _rootView = new GUIView();
-        private GUIView _headerView = new GUIView();
         private GUIView _contentView = new GUIView();
-        private GUIView _footerView = new GUIView();
 
-        public MainWindow()
+        public override void Init()
         {
-            this.windowIndex = 0;
-            this.isShowWnd = false;
-            this.windowRect = new Rect(
-                Screen.width - _windowWidth - 30,
-                100,
-                _windowWidth,
-                _windowHeight
-            );
+            base.Init();
+            InitView();
         }
 
-        public void Init()
+        protected override void LoadPlacement(out int x, out int y, out int width, out int height)
         {
+            // 画面解像度が変わった後でも収まるよう、保存値は読み込み時点で丸める
+            width = Mathf.Min(config.mainWindowWidth, Screen.width);
+            height = Mathf.Min(config.mainWindowHeight, Screen.height);
+
+            x = config.mainWindowPosX;
+            y = config.mainWindowPosY;
+
+            // 初回は画面右寄せ (基底の既定は中央のため、従来の表示位置を保つ)
+            if (x < 0 || y < 0)
+            {
+                x = Screen.width - width - 30;
+                y = 100;
+            }
         }
 
-        public void Update()
+        protected override void StorePlacement(int x, int y, int width, int height)
         {
+            config.mainWindowPosX = x;
+            config.mainWindowPosY = y;
+            config.mainWindowWidth = width;
+            config.mainWindowHeight = height;
+            config.dirty = true;
         }
 
-        public void Close()
+        private void InitView()
         {
-            isShowWnd = false;
-        }
+            _rootView.Init(new Rect(0, 0, windowRect.width, windowRect.height));
 
-        private static void ClampWindowSize()
-        {
-            config.mainWindowWidth = Mathf.Clamp(
-                config.mainWindowWidth, MIN_WINDOW_WIDTH, Screen.width);
-            config.mainWindowHeight = Mathf.Clamp(
-                config.mainWindowHeight, MIN_WINDOW_HEIGHT, Screen.height);
-        }
-
-        public void InitView()
-        {
-            _rootView.Init(0, 0, _windowWidth, _windowHeight);
-            _headerView.Init(0, 0, _windowWidth, HEADER_HEIGHT);
-            _contentView.Init(0, HEADER_HEIGHT, _windowWidth,
-                _windowHeight - HEADER_HEIGHT - FOOTER_HEIGHT);
-            _footerView.Init(0, _windowHeight - FOOTER_HEIGHT, _windowWidth, FOOTER_HEIGHT);
-
-            _headerView.parent = _rootView;
             _contentView.parent = _rootView;
-            _footerView.parent = _rootView;
+            _contentView.Init(contentRect);
         }
 
-        public void OnLoad()
+        protected override void OnSizeChanged(int width, int height)
+        {
+            InitView();
+        }
+
+        public override void OnLoad()
         {
             // プラグイン有効化時に呼ばれるためウィンドウを表示する
             isShowWnd = true;
-            MTEUtils.AdjustWindowPosition(ref _windowRect);
+            base.OnLoad();
         }
 
-        public void OnChangedSceneLevel(Scene scene, LoadSceneMode sceneMode)
+        /// <summary>
+        /// 画面が縮んだときはウィンドウも収まるサイズへ詰める。
+        /// 基底は位置のクランプしか行わないため、サイズ側はここで面倒を見る
+        /// </summary>
+        public override void OnScreenSizeChanged()
         {
+            var rect = windowRect;
+            rect.width = Mathf.Max(Mathf.Min(rect.width, Screen.width), minWidth);
+            rect.height = Mathf.Max(Mathf.Min(rect.height, Screen.height), minHeight);
+            windowRect = rect;
+
+            base.OnScreenSizeChanged();
         }
 
-        public void OnScreenSizeChanged()
+        public override void Close()
         {
-            ClampWindowSize();
-            MTEUtils.AdjustWindowPosition(ref _windowRect);
-        }
+            // ヘッダーの閉じるボタンはプラグインごと無効化する。
+            // 無効化経路 (OnPluginDisable) からも Close が呼ばれるため、
+            // 有効なときだけ触って isEnable セッターの再入に頼らない
+            base.Close();
 
-        public void InitGUI()
-        {
-            if (_initializedGUI)
-            {
-                return;
-            }
-            _initializedGUI = true;
-
-            // 画面解像度が変わった後でも収まるよう、保存値は読み込み時点で丸める
-            ClampWindowSize();
-
-            _windowWidth = config.mainWindowWidth;
-            _windowHeight = config.mainWindowHeight;
-            _windowRect.width = _windowWidth;
-            _windowRect.height = _windowHeight;
-
-            InitView();
-
-            if (config.mainWindowPosX != -1 && config.mainWindowPosY != -1)
-            {
-                _windowRect.x = config.mainWindowPosX;
-                _windowRect.y = config.mainWindowPosY;
-            }
-
-            MTEUtils.AdjustWindowPosition(ref _windowRect);
-        }
-
-        public void OnGUI()
-        {
-            if (!isShowWnd)
-            {
-                return;
-            }
-
-            InitGUI();
-
-            if (_windowWidth != config.mainWindowWidth ||
-                _windowHeight != config.mainWindowHeight)
-            {
-                _windowWidth = config.mainWindowWidth;
-                _windowHeight = config.mainWindowHeight;
-                _windowRect.width = _windowWidth;
-                _windowRect.height = _windowHeight;
-                InitView();
-
-                // 拡大でウィンドウが画面外へはみ出さないよう位置も詰め直す
-                MTEUtils.AdjustWindowPosition(ref _windowRect);
-            }
-
-            windowRect = GUI.Window(WINDOW_ID, windowRect, DrawWindow, PluginInfo.WindowName, GUIView.gsWin);
-            MTEUtils.ResetInputOnScroll(windowRect);
-
-            if (config.mainWindowPosX != (int)windowRect.x ||
-                config.mainWindowPosY != (int)windowRect.y)
-            {
-                config.mainWindowPosX = (int)windowRect.x;
-                config.mainWindowPosY = (int)windowRect.y;
-                config.dirty = true;
-            }
-        }
-
-        private void DrawWindow(int id)
-        {
-            _rootView.ResetLayout();
-
-            DrawHeader();
-            DrawContent();
-            DrawResizeGrip();
-
-            _rootView.DrawComboBox();
-
-            // リサイズ中にウィンドウ移動が同時に走ると位置とサイズが競合するため抑止する
-            if (!_windowSizeDragInfo.isDragging)
-            {
-                GUI.DragWindow();
-            }
-        }
-
-        // 右下のリサイズグリップ。実サイズは config 経由で OnGUI が反映する
-        private void DrawResizeGrip()
-        {
-            var view = _footerView;
-            view.ResetLayout();
-
-            // フッター内の右端に合わせるため、padding/margin は入れない
-            view.padding = Vector2.zero;
-            view.margin = 0;
-
-            view.BeginLayout(GUIView.LayoutDirection.Free);
-
-            view.currentPos.x = _windowWidth - FOOTER_HEIGHT;
-
-            view.DrawDraggableButton("□", FOOTER_HEIGHT, FOOTER_HEIGHT,
-                _windowSizeDragInfo,
-                new Vector2(_windowWidth, _windowHeight),
-                null,
-                value =>
-                {
-                    config.mainWindowWidth = (int)value.x;
-                    config.mainWindowHeight = (int)value.y;
-
-                    ClampWindowSize();
-
-                    config.dirty = true;
-                });
-        }
-
-        private void DrawHeader()
-        {
-            var view = _headerView;
-            view.ResetLayout();
-
-            view.padding = Vector2.zero;
-
-            view.currentPos.x = _windowWidth - 20;
-
-            if (view.DrawButton("x", 20, 20))
+            if (plugin.isEnable)
             {
                 plugin.isEnable = false;
             }
         }
 
-        private void DrawContent()
+        protected override void DrawContent()
+        {
+            _rootView.ResetLayout();
+
+            DrawModeContent();
+
+            // ボタン押下で _rootView に登録されたフォーカスをポップアップへ引き渡す
+            ComboBoxPopupWindow.instance.ProcessFocus(_rootView, this);
+        }
+
+        private void DrawModeContent()
         {
             var view = _contentView;
             view.ResetLayout();
-            view.SetEnabled(!view.IsComboBoxFocused());
 
             view.BeginHorizontal();
             {
@@ -261,6 +145,11 @@ namespace COM3D25.PostEffects.Plugin
                         _modeIndex = i;
                     }
                 }
+
+                // 全エフェクトの一時無効化トグル。個々の有効状態は保ったまま適用だけを止める
+                view.currentPos.x = view.viewRect.width - 80;
+                view.DrawToggle("有効", postEffectManager.effectsEnabled, 60, 20,
+                    value => postEffectManager.effectsEnabled = value);
             }
             view.EndLayout();
 
@@ -277,7 +166,6 @@ namespace COM3D25.PostEffects.Plugin
         }
 
         // 現在位置からビューの下端までをスクロール領域に充てる
-        // (ビューの高さはヘッダ・フッタを除いた値が InitView で設定されている)
         private static float GetScrollHeight(GUIView view)
         {
             return view.viewRect.height - view.currentPos.y - 5;
@@ -290,7 +178,7 @@ namespace COM3D25.PostEffects.Plugin
                 // 矢印での送りは同フレーム内で選択を変えるため、選択値は描画後に読む
                 _categoryComboBox.DrawButton("カテゴリ", view);
 
-                view.currentPos.x = _windowWidth - 80;
+                view.currentPos.x = view.viewRect.width - 80;
                 if (view.DrawButton("リセット", 60, 20))
                 {
                     ResetCategory(_categoryComboBox.currentItem);
@@ -375,7 +263,7 @@ namespace COM3D25.PostEffects.Plugin
             // 名前入力と保存
             view.BeginHorizontal();
             {
-                view.DrawTextField("名前", 40, _presetName, _windowWidth - 120, 20,
+                view.DrawTextField("名前", 40, _presetName, view.viewRect.width - 120, 20,
                     value => _presetName = value);
 
                 if (view.DrawButton("保存", 60, 20))
@@ -390,7 +278,7 @@ namespace COM3D25.PostEffects.Plugin
 
             view.BeginHorizontal();
             {
-                view.DrawLabel("「既定」で選んだプリセットを起動時に読み込みます", _windowWidth - 90, 20);
+                view.DrawLabel("「既定」で選んだプリセットを起動時に読み込みます", view.viewRect.width - 90, 20);
 
                 // 手動でファイルを追加・削除したとき用に一覧を再読み込みする
                 if (view.DrawButton("更新", 60, 20))
