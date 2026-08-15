@@ -223,6 +223,7 @@
     <Compile Include="PluginResources.cs" />
     <Compile Include="PostEffectsPreset.cs" />
     <Compile Include="PluginUtils.cs" />
+    <Compile Include="ScenePresetProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- LogicalName を指定して名前空間に依存しないリソース名にする -->

@@ -84,6 +84,11 @@ COM3D2.5 Ver.3.49.0 で動作確認済みです。
 - 保存先は `Sybaris/UnityInjector/Config/PostEffects/Presets/<名前>.xml`
 - 保存対象はエフェクト設定のみ。ウィンドウ位置やキーバインド等の動作設定は含まれない
 
+EditorWindow プラグインを導入している場合、EditorWindow のシーンプリセットにも
+ポストエフェクト設定を一緒に保存できる（保存ポップアップの「ポストエフェクト」を
+チェックする）。ペイロードは `<プリセット名>.COM3D25.PostEffects.xml` として本体 XML の隣に
+書き出され、形式は上記のプリセットファイルと同じなので相互に流用できる。
+
 ### カスタムテクスチャ
 
 `Sybaris/UnityInjector/Config/PostEffects/Images/` 以下に画像を置くと、

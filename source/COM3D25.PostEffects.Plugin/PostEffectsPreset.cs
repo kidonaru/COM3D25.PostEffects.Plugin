@@ -1,5 +1,8 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Xml.Serialization;
 using COM3D2.MotionTimelineEditor;
 
 namespace COM3D25.PostEffects.Plugin
@@ -7,8 +10,12 @@ namespace COM3D25.PostEffects.Plugin
     // プリセットとして保存するエフェクト設定一式
     // (動作設定・ウィンドウ位置・キーバインドは含めない)
     //
-    // エフェクトを追加したときはここにフィールドを 1 行足すだけでよい。
-    // EffectSettings との受け渡しは同名・同型のフィールドを突き合わせて行う
+    // エフェクトを追加したときはここに `= new XxxSetting()` 付きのフィールドを 1 行足すだけでよい
+    // (初期化子が「既定値」の定義そのものなので省略しないこと)。
+    // EffectSettings との受け渡しは同名・同型のフィールドを突き合わせて行う。
+    //
+    // CaptureFrom 後は既定値のままのフィールドが null になる (XML から省くため)。
+    // 値を読み出す用途では ApplyTo を通すこと
     public class PostEffectsPreset
     {
         public BloomSetting bloom = new BloomSetting();
@@ -66,16 +73,17 @@ namespace COM3D25.PostEffects.Plugin
             public FieldInfo settingsField;
         }
 
+        private const BindingFlags MemberFlags = BindingFlags.Public | BindingFlags.Instance;
+
         private static readonly List<FieldPair> _fieldPairs = BuildFieldPairs();
 
         private static List<FieldPair> BuildFieldPairs()
         {
-            const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
             var pairs = new List<FieldPair>();
 
-            foreach (var presetField in typeof(PostEffectsPreset).GetFields(flags))
+            foreach (var presetField in typeof(PostEffectsPreset).GetFields(MemberFlags))
             {
-                var settingsField = typeof(EffectSettings).GetField(presetField.Name, flags);
+                var settingsField = typeof(EffectSettings).GetField(presetField.Name, MemberFlags);
                 if (settingsField == null || settingsField.FieldType != presetField.FieldType)
                 {
                     MTEUtils.LogError("EffectSettings に対応するフィールドがありません: {0}", presetField.Name);
@@ -87,20 +95,154 @@ namespace COM3D25.PostEffects.Plugin
             return pairs;
         }
 
+        /// <summary>
+        /// 既定値のままのエフェクトは null にして XML から丸ごと省く。
+        /// 大半のエフェクトは無効＝既定値のままなので、特にシーンプリセットの
+        /// サイドカーが肥大化するのを防げる
+        /// </summary>
         public void CaptureFrom(EffectSettings settings)
         {
+            var defaults = new PostEffectsPreset();
+
             foreach (var pair in _fieldPairs)
             {
-                pair.presetField.SetValue(this, pair.settingsField.GetValue(settings));
+                var value = pair.settingsField.GetValue(settings);
+                if (SerializedEquals(value, pair.presetField.GetValue(defaults)))
+                {
+                    value = null;
+                }
+                pair.presetField.SetValue(this, value);
             }
         }
 
+        /// <summary>
+        /// 省略されたエフェクトは既定値へ戻す。プリセットは全体の状態を表すため、
+        /// 記述がないものを「現状維持」にはしない。
+        /// 実際に既定値を供給しているのは XML 欠落時に残るフィールド初期化子で、
+        /// null 合体は CaptureFrom 済みインスタンスを渡された場合の保険
+        /// </summary>
         public void ApplyTo(EffectSettings settings)
         {
             foreach (var pair in _fieldPairs)
             {
-                pair.settingsField.SetValue(settings, pair.presetField.GetValue(this));
+                var value = pair.presetField.GetValue(this)
+                    ?? Activator.CreateInstance(pair.presetField.FieldType);
+                pair.settingsField.SetValue(settings, value);
             }
+        }
+
+        /// <summary>
+        /// 既定値との一致判定用の再帰比較。各 Setting クラスは Equals を持たない POCO なので、
+        /// XmlSerializer が書き出すのと同じ範囲 (公開フィールド・公開プロパティのうち
+        /// [XmlIgnore] でないもの) を突き合わせる。
+        /// CurveData.version のような直列化されない編集カウンタまで比較してしまうと、
+        /// 値を既定へ戻したのに「変更あり」と誤判定されるため範囲を揃えている
+        /// </summary>
+        private static bool SerializedEquals(object a, object b)
+        {
+            if (ReferenceEquals(a, b))
+            {
+                return true;
+            }
+            if (a == null || b == null)
+            {
+                return false;
+            }
+
+            var type = a.GetType();
+            if (type != b.GetType())
+            {
+                return false;
+            }
+
+            // 数値・列挙・string や Color/Vector などの構造体は既定の等価比較で足りる
+            if (type.IsValueType || type == typeof(string))
+            {
+                return a.Equals(b);
+            }
+
+            var listA = a as IList;
+            if (listA != null)
+            {
+                var listB = (IList)b;
+                if (listA.Count != listB.Count)
+                {
+                    return false;
+                }
+                for (int i = 0; i < listA.Count; i++)
+                {
+                    if (!SerializedEquals(listA[i], listB[i]))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            var members = GetSerializedMembers(type);
+            if (members.Count == 0)
+            {
+                // 比較材料が無い型 (プロパティのみで状態を持つ等) を「一致」にすると
+                // 設定が黙って XML から消える。安全側に倒して省略させない
+                return false;
+            }
+
+            foreach (var member in members)
+            {
+                if (!SerializedEquals(GetMemberValue(member, a), GetMemberValue(member, b)))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static readonly Dictionary<Type, List<MemberInfo>> _serializedMembers =
+            new Dictionary<Type, List<MemberInfo>>();
+
+        private static List<MemberInfo> GetSerializedMembers(Type type)
+        {
+            List<MemberInfo> members;
+            if (_serializedMembers.TryGetValue(type, out members))
+            {
+                return members;
+            }
+
+            members = new List<MemberInfo>();
+            foreach (var field in type.GetFields(MemberFlags))
+            {
+                if (!IsXmlIgnored(field))
+                {
+                    members.Add(field);
+                }
+            }
+            foreach (var property in type.GetProperties(MemberFlags))
+            {
+                // インデクサと読み書き不揃いのプロパティは XmlSerializer も対象外
+                if (property.CanRead && property.CanWrite &&
+                    property.GetIndexParameters().Length == 0 && !IsXmlIgnored(property))
+                {
+                    members.Add(property);
+                }
+            }
+
+            _serializedMembers[type] = members;
+            return members;
+        }
+
+        private static bool IsXmlIgnored(MemberInfo member)
+        {
+            return member.IsDefined(typeof(XmlIgnoreAttribute), true);
+        }
+
+        private static object GetMemberValue(MemberInfo member, object target)
+        {
+            var field = member as FieldInfo;
+            if (field != null)
+            {
+                return field.GetValue(target);
+            }
+            return ((PropertyInfo)member).GetValue(target, null);
         }
     }
 }
