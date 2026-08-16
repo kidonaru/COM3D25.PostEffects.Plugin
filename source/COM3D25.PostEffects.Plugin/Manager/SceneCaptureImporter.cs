@@ -238,6 +238,53 @@ namespace COM3D25.PostEffects.Plugin
                 },
             };
 
+            // offset / modulationTime は移植先に対応するパラメータが無い
+            maps["IsolineDef"] = new DefMap
+            {
+                presetField = "isoline",
+                ignored = { "offset", "modulationTime" },
+                custom =
+                {
+                    { "axis", MakeVector3Splitter("axisX", "axisY", "axisZ") },
+                    { "direction", MakeVector3Splitter("directionX", "directionY", "directionZ") },
+                    { "modulationAxis",
+                        MakeVector3Splitter("modulationAxisX", "modulationAxisY", "modulationAxisZ") },
+                },
+            };
+
+            // dx11Grain は未対応、intensities / filterMode / noiseTexture は移植先に対応が無い
+            // (ノイズテクスチャは seed 固定のランタイム生成で代替している)
+            maps["NoiseAndGrainDef"] = new DefMap
+            {
+                presetField = "noiseAndGrain",
+                ignored = { "dx11Grain", "filterMode", "intensities", "noiseTexture" },
+                custom =
+                {
+                    { "tiling", MakeVector3Splitter("tilingX", "tilingY", "tilingZ") },
+                },
+            };
+
+            // 移植元がロード時に位置を復元する唯一の Transform フィールド。
+            // 移植先はメインライト追従トグル + ワールド座標で持つので追従を切って座標を入れる
+            maps["SunShaftsDef"] = new DefMap
+            {
+                presetField = "sunShafts",
+                custom =
+                {
+                    { "sunTransform", (setting, text) =>
+                        {
+                            Vector3 v;
+                            if (!TryParseVector3(text, out v)) return;
+                            var s = (SunShaftsSetting)setting;
+                            s.followMainLight = false;
+                            s.sunPosX = v.x;
+                            s.sunPosY = v.y;
+                            s.sunPosZ = v.z;
+                        }
+                    },
+                },
+            };
+
             return maps;
         }
 
@@ -493,6 +540,41 @@ namespace COM3D25.PostEffects.Plugin
 
             value = new Vector3(components[0], components[1], components[2]);
             return true;
+        }
+
+        /// <summary>
+        /// Vector3 の値を 3 つのスカラーフィールドへばらす代入処理を作る。
+        /// 移植先は軸や敷き詰め量を成分ごとのスライダーで持つため
+        /// </summary>
+        private static Action<object, string> MakeVector3Splitter(
+            string xField, string yField, string zField)
+        {
+            return (setting, text) =>
+            {
+                Vector3 v;
+                if (!TryParseVector3(text, out v))
+                {
+                    return;
+                }
+
+                // 表のフィールド名にタイプミスがあっても NullReference で
+                // プリセット全体の適用を落とさない (Def 単位のスキップに留める)
+                var type = setting.GetType();
+                var x = type.GetField(xField, FieldFlags);
+                var y = type.GetField(yField, FieldFlags);
+                var z = type.GetField(zField, FieldFlags);
+                if (x == null || y == null || z == null)
+                {
+                    MTEUtils.LogError(
+                        "{0} に成分フィールドがありません: {1}/{2}/{3}",
+                        type.Name, xField, yField, zField);
+                    return;
+                }
+
+                x.SetValue(setting, v.x);
+                y.SetValue(setting, v.y);
+                z.SetValue(setting, v.z);
+            };
         }
     }
 }
