@@ -29,5 +29,9 @@ namespace COM3D25.PostEffects.Plugin
         public static string CapturePresetXml() => PresetManager.instance.CapturePresetXml();
 
         public static bool ApplyPresetXml(string xml) => PresetManager.instance.ApplyPresetXml(xml);
+
+        /// <summary>SceneCapture プリセット XML を適用する。成功可否を返す</summary>
+        public static bool ApplySceneCaptureXml(string xml) =>
+            PresetManager.instance.ApplySceneCaptureXml(xml);
     }
 }

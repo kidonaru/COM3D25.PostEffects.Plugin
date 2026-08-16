@@ -234,6 +234,49 @@ namespace COM3D25.PostEffects.Plugin
             }
         }
 
+        /// <summary>
+        /// SceneCapture プリセット XML のエフェクト設定を現在の設定へ反映する (失敗時は false)。
+        /// Effects セクションが無い / 空なら何もせず true を返す
+        /// </summary>
+        public bool ApplySceneCaptureXml(string xml)
+        {
+            if (string.IsNullOrEmpty(xml))
+            {
+                return false;
+            }
+
+            try
+            {
+                List<string> unresolved;
+                var preset = SceneCaptureImporter.Parse(xml, out unresolved);
+
+                if (unresolved.Count > 0)
+                {
+                    // 要素ごとに出すとログが埋まるため 1 回の適用につき 1 行にまとめる
+                    MTEUtils.LogWarning(
+                        "SceneCapture プリセットに未対応の項目があります: {0}",
+                        string.Join(", ", unresolved.ToArray()));
+                }
+
+                if (preset == null)
+                {
+                    // Models だけを持つプリセットで現在の設定を消さない
+                    return true;
+                }
+
+                // 選択中のプリセットとは別経路で設定が変わるため未保存扱いにする
+                EffectSettings.instance.dirty = true;
+                preset.ApplyTo(EffectSettings.instance);
+                return true;
+            }
+            catch (Exception e)
+            {
+                MTEUtils.LogException(e);
+                MTEUtils.LogError("SceneCapture プリセットの適用に失敗しました");
+                return false;
+            }
+        }
+
         public void DeletePreset(string name)
         {
             if (IsDefaultPreset(name))

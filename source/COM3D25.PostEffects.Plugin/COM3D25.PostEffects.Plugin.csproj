@@ -87,6 +87,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Effects\AnalogGlitchController.cs" />
@@ -186,6 +187,7 @@
     <Compile Include="Manager\ManagerBase.cs" />
     <Compile Include="Manager\PostEffectManager.cs" />
     <Compile Include="Manager\PresetManager.cs" />
+    <Compile Include="Manager\SceneCaptureImporter.cs" />
     <Compile Include="Manager\WindowManager.cs" />
     <Compile Include="MTEUtils\ColorExtensions.cs" />
     <Compile Include="MTEUtils\ColorPickerWindow.cs" />
