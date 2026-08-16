@@ -34,9 +34,67 @@ namespace COM3D25.PostEffects.Plugin
                 new Dictionary<string, Action<object, string>>();
         }
 
-        // Def 要素名 → 対応定義。Task 2 以降で中身を足していく
-        private static readonly Dictionary<string, DefMap> _defMaps =
-            new Dictionary<string, DefMap>();
+        // Def 要素名 → 対応定義
+        private static readonly Dictionary<string, DefMap> _defMaps = BuildDefMaps();
+
+        private static Dictionary<string, DefMap> BuildDefMaps()
+        {
+            var maps = new Dictionary<string, DefMap>();
+
+            // 既定規則 (先頭 _ を落として同名代入) だけで通る Def。
+            // MaidHide / Sepia / AnalogGlitch / DigitalGlitch は移植元が
+            // パラメータを public プロパティで持つため中身が常に空になり、有効化のみ行う
+            maps["MaidHideDef"] = new DefMap { presetField = "maidHide" };
+            maps["SepiaDef"] = new DefMap { presetField = "sepia" };
+            maps["AnalogGlitchDef"] = new DefMap { presetField = "analogGlitch" };
+            maps["DigitalGlitchDef"] = new DefMap { presetField = "digitalGlitch" };
+            maps["ContrastDef"] = new DefMap { presetField = "contrast" };
+            maps["CreaseDef"] = new DefMap { presetField = "crease" };
+            maps["MotionBlurDef"] = new DefMap { presetField = "motionBlur" };
+            maps["FisheyeDef"] = new DefMap { presetField = "fisheye" };
+            maps["TiltShiftHdrDef"] = new DefMap { presetField = "tiltShiftHdr" };
+            maps["AntialiasingDef"] = new DefMap { presetField = "antialiasing" };
+            maps["FilmicLetterBoxDef"] = new DefMap { presetField = "filmicLetterBox" };
+            maps["CinematicLensAberrationsDef"] =
+                new DefMap { presetField = "cinematicLensAberrations" };
+
+            // 移植元の GrayscaleEffect はランプテクスチャを持つが本プラグインは未対応
+            maps["GrayscaleDef"] = new DefMap
+            {
+                presetField = "grayscale",
+                ignored = { "textureRamp" },
+            };
+
+            // EdgeDetect2 は EdgeDetect と同一実装 (フィールド順以外同じ・シェーダーも共通)。
+            // EdgeDetectDef が無いときのフォールバックとして同じ設定へ流す
+            maps["EdgeDetectDef"] = new DefMap { presetField = "edgeDetect" };
+            maps["EdgeDetect2Def"] = new DefMap { presetField = "edgeDetect" };
+
+            // _debug は移植元でも UI に出ないデバッグ表示
+            maps["RampDef"] = new DefMap
+            {
+                presetField = "ramp",
+                ignored = { "debug", "maidMask" },
+            };
+
+            // maidMask / enabledTransparentMode は EffectMask 依存で未移植
+            maps["StreakDef"] = new DefMap
+            {
+                presetField = "streak",
+                ignored = { "maidMask", "enabledTransparentMode" },
+            };
+
+            // prefilterBlur / medianFilter / dilateNearBlur は移植時に省略、
+            // focusTransform は移植元もロード時に読み戻さない
+            maps["CinematicDepthOfFieldDef"] = new DefMap
+            {
+                presetField = "cinematicDepthOfField",
+                renames = { { "bokehTexture", "bokehTexturePath" } },
+                ignored = { "prefilterBlur", "medianFilter", "dilateNearBlur", "focusTransform" },
+            };
+
+            return maps;
+        }
 
         // 対応するエフェクトが本プラグインに無く、警告も出さずに捨てる Def。
         // CinematicBloomLayer は移植元の実装が EffectMask の発光 RT に固定されており移植不可
@@ -67,8 +125,15 @@ namespace COM3D25.PostEffects.Plugin
             // 記載の無いエフェクトは既定値へ戻す。プリセットは全体の状態を表すため
             var preset = new PostEffectsPreset();
 
+            // EdgeDetect2 は EdgeDetect の複製。両方あれば EdgeDetect を優先する
+            var hasEdgeDetect = effects.Element("EdgeDetectDef") != null;
+
             foreach (var defElement in effects.Elements())
             {
+                if (hasEdgeDetect && defElement.Name.LocalName == "EdgeDetect2Def")
+                {
+                    continue;
+                }
                 ApplyDef(preset, defElement, unresolved);
             }
 
