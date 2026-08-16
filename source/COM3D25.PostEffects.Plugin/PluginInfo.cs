@@ -6,7 +6,7 @@ namespace COM3D25.PostEffects.Plugin
     {
         public const string PluginName = "PostEffects";
         public const string PluginFullName = "COM3D25." + PluginName + ".Plugin";
-        public const string PluginVersion = "1.0.0.0";
+        public const string PluginVersion = "2.0.0.0";
         public const string WindowName = PluginName + " " + PluginVersion;
 
         public readonly static byte[] Icon = Convert.FromBase64String(
