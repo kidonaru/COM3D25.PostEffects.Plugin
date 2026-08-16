@@ -109,23 +109,26 @@ namespace COM3D25.PostEffects.Plugin
                     { "lensflareThreshhold", "lensFlareThreshold" },
                 },
                 // tweakMode は移植元でも描画に使われない Inspector 専用フィールド。
-                // blurWidth は古いバージョンのプリセットにだけ現れる
+                // blurWidth は古いバージョンのプリセットにだけ現れる。
+                // lensFlareVignetteMask は移植先が未対応のマスクテクスチャ参照
                 ignored = { "tweakMode", "blurWidth", "lensFlareVignetteMask" },
                 custom =
                 {
                     { "bloomIntensity", (setting, text) =>
                         {
+                            var s = As<BloomSetting>(setting);
                             float value;
-                            if (!TryParseFloat(text, out value)) return;
-                            ((BloomSetting)setting).intensity = value >= 2.86f ? value / 100f : value;
+                            if (s == null || !TryParseFloat(text, out value)) return;
+                            s.intensity = value >= 2.86f ? value / 100f : value;
                         }
                     },
                     { "quality", (setting, text) =>
                         {
+                            var s = As<BloomSetting>(setting);
                             int value;
-                            if (!TryParseInt(text, out value)) return;
+                            if (s == null || !TryParseInt(text, out value)) return;
                             // BloomQuality: 0 = Cheap, 1 = High
-                            ((BloomSetting)setting).highQuality = value == 1;
+                            s.highQuality = value == 1;
                         }
                     },
                 },
@@ -146,10 +149,11 @@ namespace COM3D25.PostEffects.Plugin
                 {
                     { "blurType", (setting, text) =>
                         {
+                            var s = As<DepthOfFieldSetting>(setting);
                             int value;
-                            if (!TryParseInt(text, out value)) return;
+                            if (s == null || !TryParseInt(text, out value)) return;
                             // BlurType: 0 = DiscBlur, 1 = DX11
-                            ((DepthOfFieldSetting)setting).useDX11Bokeh = value == 1;
+                            s.useDX11Bokeh = value == 1;
                         }
                     },
                 },
@@ -273,9 +277,9 @@ namespace COM3D25.PostEffects.Plugin
                 {
                     { "sunTransform", (setting, text) =>
                         {
+                            var s = As<SunShaftsSetting>(setting);
                             Vector3 v;
-                            if (!TryParseVector3(text, out v)) return;
-                            var s = (SunShaftsSetting)setting;
+                            if (s == null || !TryParseVector3(text, out v)) return;
                             s.followMainLight = false;
                             s.sunPosX = v.x;
                             s.sunPosY = v.y;
@@ -448,10 +452,26 @@ namespace COM3D25.PostEffects.Plugin
         }
 
         /// <summary>
+        /// custom の代入処理で使う型変換。表の presetField が誤っていても
+        /// InvalidCastException でプリセット全体の適用を落とさない
+        /// </summary>
+        private static T As<T>(object setting) where T : class
+        {
+            var typed = setting as T;
+            if (typed == null)
+            {
+                MTEUtils.LogError(
+                    "対応表の presetField が {0} を指していません: {1}",
+                    typeof(T).Name, setting.GetType().Name);
+            }
+            return typed;
+        }
+
+        /// <summary>
         /// Setting のフィールドへ SceneCapture の書式で書かれた値を代入する。
         /// フィールドが無い / 書式が不正なときは false を返して代入しない
         /// </summary>
-        public static bool TrySetField(object setting, string fieldName, string text)
+        private static bool TrySetField(object setting, string fieldName, string text)
         {
             var field = setting.GetType().GetField(fieldName, FieldFlags);
             if (field == null)
@@ -526,20 +546,20 @@ namespace COM3D25.PostEffects.Plugin
             return false;
         }
 
-        public static bool TryParseFloat(string text, out float value)
+        private static bool TryParseFloat(string text, out float value)
         {
             return float.TryParse(
                 text, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
         }
 
-        public static bool TryParseInt(string text, out int value)
+        private static bool TryParseInt(string text, out int value)
         {
             return int.TryParse(
                 text, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>SceneCapture は Color を Color32 の "r,g,b,a" (各 0-255) で書き出す</summary>
-        public static bool TryParseColor(string text, out Color value)
+        private static bool TryParseColor(string text, out Color value)
         {
             value = Color.white;
 
@@ -564,7 +584,7 @@ namespace COM3D25.PostEffects.Plugin
             return true;
         }
 
-        public static bool TryParseVector3(string text, out Vector3 value)
+        private static bool TryParseVector3(string text, out Vector3 value)
         {
             value = Vector3.zero;
 
