@@ -93,6 +93,151 @@ namespace COM3D25.PostEffects.Plugin
                 ignored = { "prefilterBlur", "medianFilter", "dilateNearBlur", "focusTransform" },
             };
 
+            // 移植元は bloomIntensity を 0〜2.85 で扱っていた時期があり、
+            // ロード時に 2.86 以上なら 100 で割る互換処理を持つ。同じ扱いにする
+            maps["BloomDef"] = new DefMap
+            {
+                presetField = "bloom",
+                renames =
+                {
+                    { "bloomThreshhold", "threshold" },
+                    { "bloomThreshholdColor", "thresholdColor" },
+                    { "bloomBlurIterations", "blurIterations" },
+                    { "sepBlurSpread", "blurSpread" },
+                    { "lensflareMode", "lensFlareMode" },
+                    { "lensflareIntensity", "lensFlareIntensity" },
+                    { "lensflareThreshhold", "lensFlareThreshold" },
+                },
+                // tweakMode は移植元でも描画に使われない Inspector 専用フィールド。
+                // blurWidth は古いバージョンのプリセットにだけ現れる
+                ignored = { "tweakMode", "blurWidth", "lensFlareVignetteMask" },
+                custom =
+                {
+                    { "bloomIntensity", (setting, text) =>
+                        {
+                            float value;
+                            if (!TryParseFloat(text, out value)) return;
+                            ((BloomSetting)setting).intensity = value >= 2.86f ? value / 100f : value;
+                        }
+                    },
+                    { "quality", (setting, text) =>
+                        {
+                            int value;
+                            if (!TryParseInt(text, out value)) return;
+                            // BloomQuality: 0 = Cheap, 1 = High
+                            ((BloomSetting)setting).highQuality = value == 1;
+                        }
+                    },
+                },
+            };
+
+            // focalTransform は移植元もロード時に読み戻さない
+            maps["DepthOfFieldDef"] = new DefMap
+            {
+                presetField = "depthOfField",
+                renames =
+                {
+                    // 綴りは移植元のバージョンによって Threshhold / Threshold が混在する
+                    { "dx11BokehThreshhold", "dx11BokehThreshold" },
+                    { "dx11BokehTexture", "dx11BokehTexturePath" },
+                },
+                ignored = { "focalTransform" },
+                custom =
+                {
+                    { "blurType", (setting, text) =>
+                        {
+                            int value;
+                            if (!TryParseInt(text, out value)) return;
+                            // BlurType: 0 = DiscBlur, 1 = DX11
+                            ((DepthOfFieldSetting)setting).useDX11Bokeh = value == 1;
+                        }
+                    },
+                },
+            };
+
+            // pointOfFocus は移植元もロード時に読み戻さない
+            maps["BokehDef"] = new DefMap
+            {
+                presetField = "bokeh",
+                renames = { { "focalrange", "focalRange" } },
+                ignored = { "pointOfFocus" },
+            };
+
+            // depthCutoff 系・medianFilter は移植元でもシェーダーへ渡らないデッドコード
+            maps["FilmicBokehDef"] = new DefMap
+            {
+                presetField = "filmicBokeh",
+                renames = { { "focalrange", "focalRange" } },
+                ignored = { "pointOfFocus", "depthCutoffMode", "depthCutoff", "medianFilter" },
+            };
+
+            // ambientOnly は移植元でも機能していないデッドコード
+            maps["ObscuranceDef"] = new DefMap
+            {
+                presetField = "obscurance",
+                renames = { { "sampleCountValue", "variableSampleCount" } },
+                ignored = { "ambientOnly" },
+            };
+
+            maps["FilmicMedianFilterDef"] = new DefMap
+            {
+                presetField = "filmicMedianFilter",
+                renames = { { "medianFilter", "quality" } },
+            };
+
+            // 移植元は Texture3D フィールドの保存に converted3DLutFile プロパティの
+            // 相対パスを書き出す。本プラグインは 2D ストリップのパスとして受け取る
+            maps["ColorCorrectionLutDef"] = new DefMap
+            {
+                presetField = "colorCorrectionLut",
+                renames = { { "converted3DLut", "lutTexturePath" } },
+            };
+
+            maps["CinematicBloomDef"] = new DefMap
+            {
+                presetField = "cinematicBloom",
+                renames =
+                {
+                    { "bDirtTexture", "useDirtTexture" },
+                    { "dirtTexture", "dirtTexturePath" },
+                },
+                ignored = { "maidMask", "enabledTransparentMode" },
+            };
+
+            maps["FilmicBloomDef"] = new DefMap
+            {
+                presetField = "filmicBloom",
+                renames =
+                {
+                    { "bDirtTexture", "useDirtTexture" },
+                    { "dirtTexture", "dirtTexturePath" },
+                    { "streakthreshold", "streakThreshold" },
+                    { "streaksoftKnee", "streakSoftKnee" },
+                    { "streakstretch", "streakStretch" },
+                    { "streakintensity", "streakIntensity" },
+                    { "streaktint", "streakTint" },
+                },
+                ignored = { "maidMask", "enabledTransparentMode" },
+            };
+
+            // 移植先は Gradient を 2 色の線形補間へ整理してある。
+            // Gradient 型そのものは移植元が保存しないので届かない
+            maps["StylisticFogDef"] = new DefMap
+            {
+                presetField = "stylisticFog",
+                renames =
+                {
+                    { "distanceGradientFirstColor", "distanceFirstColor" },
+                    { "distanceGradientLastColor", "distanceLastColor" },
+                    { "heightGradientFirstColor", "heightFirstColor" },
+                    { "heightGradientLastColor", "heightLastColor" },
+                    { "distanceFogColorSelectionType", "distanceColorSource" },
+                    { "heightFogColorSelectionType", "heightColorSource" },
+                    { "distanceColorRamp", "distanceRampPath" },
+                    { "heightColorRamp", "heightRampPath" },
+                },
+            };
+
             return maps;
         }
 
