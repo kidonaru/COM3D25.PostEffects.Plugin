@@ -175,6 +175,12 @@ namespace COM3D25.PostEffects.Plugin
             configManager.SaveConfigXml();
         }
 
+        void OnDestroy()
+        {
+            // ホストは常駐するため、解除しないとハンドラごと参照が残る
+            EditorStateClient.Unsubscribe(OnEditorEnabledChanged);
+        }
+
         private void Initialize()
         {
             try
@@ -202,6 +208,10 @@ namespace COM3D25.PostEffects.Plugin
                 managerRegistry.RegisterManager(PresetManager.instance);
 
                 AddGearMenu();
+
+                // SceneEditor の有効/無効に追従する
+                // (ロード順の再試行と初期同期はクライアント側が面倒を見る)
+                EditorStateClient.Subscribe(OnEditorEnabledChanged);
             }
             catch (Exception e)
             {
@@ -277,6 +287,19 @@ namespace COM3D25.PostEffects.Plugin
         {
             MTEUtils.Log("プラグインが無効になりました");
             managerRegistry.OnPluginDisable();
+        }
+
+        private void OnEditorEnabledChanged(bool enabled)
+        {
+            // 例外は EditorStateClient 側でも握られるが、他のエントリポイントと様式を揃える
+            try
+            {
+                isEnable = enabled;
+            }
+            catch (Exception e)
+            {
+                MTEUtils.LogException(e);
+            }
         }
     }
 }

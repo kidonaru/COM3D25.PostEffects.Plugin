@@ -196,6 +196,7 @@
     <Compile Include="MTEUtils\CurveEditorWindow.cs" />
     <Compile Include="MTEUtils\DockableWindowBase.cs" />
     <Compile Include="MTEUtils\DockingClient.cs" />
+    <Compile Include="MTEUtils\EditorStateClient.cs" />
     <Compile Include="MTEUtils\IGUIWindow.cs" />
     <Compile Include="MTEUtils\IScreenScalableWindow.cs" />
     <Compile Include="MTEUtils\ITabVisibleWindow.cs" />
