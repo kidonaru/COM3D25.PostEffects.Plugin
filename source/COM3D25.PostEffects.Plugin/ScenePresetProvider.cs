@@ -14,7 +14,7 @@ namespace COM3D25.PostEffects.Plugin
 
     /// <summary>
     /// シーンプリセットにポストエフェクト設定を載せるためのプロバイダ。
-    /// 契約は public static のプロパティ 2 つ + メソッド 2 つで、EditorWindow が
+    /// 契約メンバはすべて public static で、EditorWindow が
     /// アセンブリ走査で発見する (このクラス側での登録処理は不要)
     /// </summary>
     [ScenePresetProvider]
@@ -25,6 +25,9 @@ namespace COM3D25.PostEffects.Plugin
         public static string PresetProviderId => "PostEffects";
 
         public static string PresetProviderDisplayName => "ポストエフェクト (PostEffects)";
+
+        /// <summary>読込トグルなど狭い場所で使う短縮名</summary>
+        public static string PresetProviderShortDisplayName => "エフェクト";
 
         public static string CapturePresetXml() => PresetManager.instance.CapturePresetXml();
 
