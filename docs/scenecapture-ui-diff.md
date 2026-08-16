@@ -376,3 +376,48 @@ SSAO は深度／深度＋法線テクスチャだけを見て画面全体に効
 - 深度補正のシェーダー差し替え回避策（ゲーム側 `ccDepthMaterial` の実装ミスを補正。移植元では絵が壊れる）
 - エフェクト一覧のカテゴリ絞り込みとカテゴリ単位の一括リセット、ウィンドウの位置・サイズの永続化
 - ScreenOverlay エフェクト（新規）、Blur の SGX ガウス切替
+
+## 7. SceneCapture プリセットの取り込み
+
+SceneEditor 経由で SceneCapture プリセットの `<Effects>` を適用できる
+（`Manager/SceneCaptureImporter.cs`、契約は `ScenePresetProvider.ApplySceneCaptureXml`）。
+対応の詳細は `docs/superpowers/specs/2026-08-16-scenecapture-import-design.md` を参照。
+
+### enum の値対応
+
+移植元は enum を int 値で保存するため、移植先との並び順を全件突き合わせた。
+結果は**全 24 種で並び順が一致**し、読み替えは不要だった。
+
+| 移植先 | 移植元 | 結果 |
+|---|---|---|
+| `AAMode` | 同型（`Assembly-UnityScript-firstpass`） | 一致（2.0 / 2.5 で定義同一） |
+| `SunShaftsResolution` / `ShaftsScreenBlendMode` | 同型（同上） | 一致（2.0 / 2.5 で定義同一） |
+| `TiltShiftHdr.TiltShiftMode` / `TiltShiftQuality` | 同型（同上） | 一致（2.0 / 2.5 で定義同一） |
+| `Bloom.HDRBloomMode` / `BloomScreenBlendMode` / `LensFlareStyle` | `BloomSC` の同名 enum | 一致 |
+| `DepthOfFieldScatter.BlurSampleCount` | `DepthOfField.BlurSampleCount` | 一致 |
+| `CinematicDepthOfFieldEffect.TweakMode` / `ApertureShape` / `QualityPreset` | `CinematicDepthOfField` の同名 enum | 一致 |
+| `BokehEffect.KernelSize` / `FilmicBokehEffect.KernelSize` | `Bokeh` / `FilmicBokeh` の `KernelSize` | 一致 |
+| `ObscuranceEffect.SampleCount` / `OcclusionSource` | `Obscurance` の同名 enum | 一致 |
+| `RampEffect` / `StreakEffect` / `FilmicBloomEffect` の `BlendMode` | 各同名 enum | 一致 |
+| `IsolineEffect.ModulationMode` | `Isoline.ModulationMode` | 一致 |
+| `EdgeDetectEffect.EdgeDetectMode` | `EdgeDetectEffectNormals.EdgeDetectMode` | 一致（自前実装だが 7 メンバ同順） |
+| `StylisticFogEffect.ColorSource` | `StylisticFog.ColorSelectionType` | 一致（型名のみ相違） |
+| `TonemappingColorGradingEffect.Tonemapper` | `TonemappingColorGrading.Tonemapper` | 一致 |
+| `FilmicMedianFilterEffect.FilterQuality` | `FilmicMedianFilter.FilterQuality` | 一致 |
+
+`BloomQuality`（Cheap / High）と `DepthOfField.BlurType`（DiscBlur / DX11）は移植先が
+bool フィールド（`highQuality` / `useDX11Bokeh`）に整理してあるため、int → bool の変換で取り込む。
+
+### 取り込めない項目
+
+- `CinematicBloomLayerDef` — 移植不可（EffectMask 依存）
+- `MaidHideDef` / `SepiaDef` / `AnalogGlitchDef` / `DigitalGlitchDef` の各パラメータ —
+  移植元がパラメータを public プロパティで持つため、`SaveDef`（public フィールドのみ走査）が
+  値を書き出さない。有効化のみ取り込める
+- `vignetteCenter`（LensAberrations）/ `center`（FilmicLetterBox）/ Gradient 型（StylisticFog）—
+  移植元の `SerializeStatic.ALLOWED_TYPES` に `Vector2` / `Gradient` が無く保存されない
+- ピント用 Transform（`focalTransform` / `_pointOfFocus` / `_focusTransform`）—
+  移植元もロード時に読み戻さない（`SunShaftsDef.sunTransform` のみ例外的に復元される）
+- `_maidMask` / `_enabledTransparentMode` / `_ambientOnly` / `_debug` / `tweakMode` /
+  `_prefilterBlur` / `_dilateNearBlur` / `_depthCutoff` 系 / `dx11Grain` / `intensities` —
+  移植時に落とした項目、または移植元でもデッドコードの項目
