@@ -21,6 +21,8 @@ namespace COM3D25.PostEffects.Plugin
             }
         }
         public override Color windowHoverColor => config.windowHoverColor;
+        // UI のアクセントカラー（トグル・ボタン等の有効状態）をシアンにする
+        public override Color accentColor => Color.cyan;
         public override Texture2D changeIcon => PluginResources.changeIcon;
         public override Texture2D favoriteOffIcon => null;
         public override Texture2D favoriteOnIcon => null;

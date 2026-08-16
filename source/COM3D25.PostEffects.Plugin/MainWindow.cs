@@ -140,7 +140,7 @@ namespace COM3D25.PostEffects.Plugin
                 for (var i = 0; i < ModeNames.Length; i++)
                 {
                     var selected = i == _modeIndex;
-                    if (view.DrawButton(ModeNames[i], 80, 20, true, selected ? Color.green : (Color?)null))
+                    if (view.DrawButton(ModeNames[i], 80, 20, true, selected ? GUIView.option.accentColor : (Color?)null))
                     {
                         _modeIndex = i;
                     }
@@ -308,7 +308,7 @@ namespace COM3D25.PostEffects.Plugin
                             _presetName = isDefault ? "" : name;
                         }
 
-                        if (view.DrawButton("既定", 50, 20, true, isStartup ? Color.green : (Color?)null))
+                        if (view.DrawButton("既定", 50, 20, true, isStartup ? GUIView.option.accentColor : (Color?)null))
                         {
                             config.startupPresetName = name;
                             config.dirty = true;
