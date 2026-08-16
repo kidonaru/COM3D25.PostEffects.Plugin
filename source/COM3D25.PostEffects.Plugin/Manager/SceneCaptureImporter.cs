@@ -285,6 +285,51 @@ namespace COM3D25.PostEffects.Plugin
                 },
             };
 
+            // mode / updateTextures は移植先が持たない (深度補正の可否は useDepthCorrection 側)
+            maps["ColorCorrectionCurvesDef"] = new DefMap
+            {
+                presetField = "colorCorrectionCurves",
+                ignored = { "mode", "updateTextures" },
+                custom =
+                {
+                    { "redChannel", MakeCurveSetter("redCurve") },
+                    { "greenChannel", MakeCurveSetter("greenCurve") },
+                    { "blueChannel", MakeCurveSetter("blueCurve") },
+                    { "depthRedChannel", MakeCurveSetter("depthRedCurve") },
+                    { "depthGreenChannel", MakeCurveSetter("depthGreenCurve") },
+                    { "depthBlueChannel", MakeCurveSetter("depthBlueCurve") },
+                    { "zCurve", MakeCurveSetter("zCurve") },
+                },
+            };
+
+            // precision は LUT サイズ固定で参照されないデッドコード、
+            // ShowDebug 系と minSizePerWheel / maxSizePerWheel / color は UI 描画用
+            maps["TonemappingColorGradingDef"] = new DefMap
+            {
+                presetField = "tonemappingColorGrading",
+                renames =
+                {
+                    { "EyeAdaptationEnabled", "eyeAdaptationEnabled" },
+                    { "TonemappingEnabled", "tonemappingEnabled" },
+                    { "LUTEnabled", "userLutEnabled" },
+                    { "contribution", "userLutContribution" },
+                    { "texture", "userLutPath" },
+                },
+                ignored =
+                {
+                    "precision", "eyeAdaptationShowDebug", "showDebug",
+                    "minSizePerWheel", "maxSizePerWheel", "color",
+                },
+                custom =
+                {
+                    { "tonemappingCurve", MakeCurveSetter("tonemappingCurve") },
+                    { "masterCurve", MakeCurveSetter("masterCurve") },
+                    { "redCurve", MakeCurveSetter("redCurve") },
+                    { "greenCurve", MakeCurveSetter("greenCurve") },
+                    { "blueCurve", MakeCurveSetter("blueCurve") },
+                },
+            };
+
             return maps;
         }
 
@@ -574,6 +619,53 @@ namespace COM3D25.PostEffects.Plugin
                 x.SetValue(setting, v.x);
                 y.SetValue(setting, v.y);
                 z.SetValue(setting, v.z);
+            };
+        }
+
+        /// <summary>
+        /// 移植元のカーブ文字列を CurveData へ変換する代入処理を作る。
+        /// 書式は "outTangent0,value0,inTangent1,value1" で、時刻 0 と 1 の 2 キー固定
+        /// (移植元 Util.ConvertStringToAnimationCurve と同じ組み立て)
+        /// </summary>
+        private static Action<object, string> MakeCurveSetter(string fieldName)
+        {
+            return (setting, text) =>
+            {
+                var parts = text.Split(',');
+                if (parts.Length != 4)
+                {
+                    return;
+                }
+
+                var values = new float[4];
+                for (var i = 0; i < 4; i++)
+                {
+                    if (!TryParseFloat(parts[i], out values[i]))
+                    {
+                        return;
+                    }
+                }
+
+                var curve = new CurveData
+                {
+                    keys = new List<CurveKeyData>
+                    {
+                        new CurveKeyData
+                        {
+                            time = 0f, value = values[1], inTangent = 0f, outTangent = values[0],
+                        },
+                        new CurveKeyData
+                        {
+                            time = 1f, value = values[3], inTangent = values[2], outTangent = 0f,
+                        },
+                    },
+                };
+
+                var field = setting.GetType().GetField(fieldName, FieldFlags);
+                if (field != null)
+                {
+                    field.SetValue(setting, curve);
+                }
             };
         }
     }
