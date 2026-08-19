@@ -2,7 +2,11 @@
 chcp 65001
 setlocal
 
-call .\source\COM3D25.PostEffects.Plugin\build.bat debug
+rem 引数: %1 = com3d2/com3d25/all (既定 com3d25)
+set TARGET=%~1
+if "%TARGET%"=="" set TARGET=com3d25
+
+call .\source\COM3D25.PostEffects.Plugin\build.bat debug %TARGET%
 if %ERRORLEVEL% neq 0 (
     echo ビルドに失敗しました
     exit /b 1
