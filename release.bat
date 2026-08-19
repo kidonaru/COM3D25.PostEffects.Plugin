@@ -29,18 +29,11 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
-rem COM3D2.5 版は共通 Config を丸ごとコピーしたうえで、dll と posteffects を 2.5 用に差し替える
+rem COM3D2.5 版は共通 Config を丸ごとコピーしたうえで、dll と posteffects を 2.5 用に上書きする
+rem (dll は両バージョン同名のため、上書きコピーだけで差し替えが完了する)
 xcopy UnityInjector "output\%PLUGIN_NAME%\UnityInjector (COM3D2.5)" /E /I
 if %ERRORLEVEL% neq 0 (
     echo COM3D2.5 版のコピーに失敗しました
-    exit /b 1
-)
-rem UnityInjector に 2.0 dll が無い状態 (単体ターゲットビルド直後等) でも止まらないよう存在確認してから消す
-if exist "output\%PLUGIN_NAME%\UnityInjector (COM3D2.5)\COM3D2.PostEffects.Plugin.dll" (
-    del /q "output\%PLUGIN_NAME%\UnityInjector (COM3D2.5)\COM3D2.PostEffects.Plugin.dll"
-)
-if %ERRORLEVEL% neq 0 (
-    echo COM3D2.5 版フォルダからの COM3D2 版 dll の削除に失敗しました
     exit /b 1
 )
 xcopy "UnityInjector (COM3D2.5)" "output\%PLUGIN_NAME%\UnityInjector (COM3D2.5)" /E /I /Y
@@ -49,21 +42,18 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
-rem 取り違え防止のため、各フォルダに正しい dll だけが入っていることを検証する
-if not exist "output\%PLUGIN_NAME%\UnityInjector\COM3D2.PostEffects.Plugin.dll" (
-    echo dll がパッケージに含まれていません: UnityInjector\COM3D2.PostEffects.Plugin.dll
+rem 取り違え防止の検証: 両フォルダに dll があり、かつ中身が異なる (=上書きが行われた) こと
+if not exist "output\%PLUGIN_NAME%\UnityInjector\%PLUGIN_NAME%.dll" (
+    echo dll がパッケージに含まれていません: UnityInjector\%PLUGIN_NAME%.dll
     exit /b 1
 )
 if not exist "output\%PLUGIN_NAME%\UnityInjector (COM3D2.5)\%PLUGIN_NAME%.dll" (
     echo dll がパッケージに含まれていません: UnityInjector ^(COM3D2.5^)\%PLUGIN_NAME%.dll
     exit /b 1
 )
-if exist "output\%PLUGIN_NAME%\UnityInjector (COM3D2.5)\COM3D2.PostEffects.Plugin.dll" (
-    echo COM3D2.5 版のフォルダに COM3D2 版 dll が残っています
-    exit /b 1
-)
-if exist "output\%PLUGIN_NAME%\UnityInjector\%PLUGIN_NAME%.dll" (
-    echo COM3D2 版のフォルダに COM3D2.5 版 dll が混入しています
+fc /b "output\%PLUGIN_NAME%\UnityInjector\%PLUGIN_NAME%.dll" "output\%PLUGIN_NAME%\UnityInjector (COM3D2.5)\%PLUGIN_NAME%.dll" >nul
+if %ERRORLEVEL% equ 0 (
+    echo COM3D2 版と COM3D2.5 版の dll が同一です ^(差し替え漏れの可能性があります^)
     exit /b 1
 )
 

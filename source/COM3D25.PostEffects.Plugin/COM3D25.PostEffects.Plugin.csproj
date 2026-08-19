@@ -42,15 +42,17 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);$(GameVersion)</DefineConstants>
   </PropertyGroup>
+  <!-- dll 名は両バージョンで統一する (別名だと誤インストール時に新旧 dll が共存して二重ロードされるため) -->
+  <PropertyGroup>
+    <AssemblyName>COM3D25.PostEffects.Plugin</AssemblyName>
+  </PropertyGroup>
   <!-- COM3D2.5 (Unity 2022 / .NET 4.x) -->
   <PropertyGroup Condition=" '$(GameVersion)' == 'COM3D25' ">
     <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
-    <AssemblyName>COM3D25.PostEffects.Plugin</AssemblyName>
   </PropertyGroup>
   <!-- COM3D2 (2.0, Unity 5.6 / Mono net35 相当) -->
   <PropertyGroup Condition=" '$(GameVersion)' == 'COM3D2' ">
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <AssemblyName>COM3D2.PostEffects.Plugin</AssemblyName>
     <OutputPath>$(OutputPath)COM3D2\</OutputPath>
     <!-- 中間出力も分ける (COM3D2.5 と obj を共有すると並行ビルド時に書き込みが競合する) -->
     <IntermediateOutputPath>obj\$(Configuration)\COM3D2\</IntermediateOutputPath>

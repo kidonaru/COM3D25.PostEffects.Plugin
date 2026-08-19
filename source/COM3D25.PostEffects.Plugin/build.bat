@@ -107,7 +107,8 @@ exit /b 0
 
 rem ============ COM3D2 (2.0) 版 ============
 :build_com3d2
-set DLL_NAME=COM3D2.PostEffects.Plugin.dll
+rem dll 名は 2.5 版と同名 (誤インストール時に上書きになり、新旧共存による二重ロードを防ぐ)
+set DLL_NAME=COM3D25.PostEffects.Plugin.dll
 set MSBUILD_ARGS=/p:GameVersion=COM3D2 "/p:COM3D2_DIR=%COM3D2_DIR%"
 rem COM3D2 版の出力は bin\<Config>\COM3D2\ 配下 (2.5 版と混ざらないよう分けている)
 set OUT_DIR=bin\%CONFIG%\COM3D2

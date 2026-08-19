@@ -1,7 +1,7 @@
 # COM3D25.PostEffects.Plugin
 
 COM3D2 / COM3D2.5 のメインカメラに多彩なポストエフェクトを適用し、GUI から制御するプラグイン。
-**COM3D2 (2.0) と COM3D2.5 (Unity 2022) の両方に対応**（バージョンごとに dll が分かれています）。
+**COM3D2 (2.0) と COM3D2.5 (Unity 2022) の両方に対応**（バージョンごとにフォルダが分かれています）。
 
 https://github.com/user-attachments/assets/becec22f-b537-4a2d-b0e2-8fc74a3debcb
 
@@ -19,7 +19,7 @@ zip を解凍すると次の構成になっています。
 COM3D25.PostEffects.Plugin\
 ├── README.txt
 ├── UnityInjector\                    ← COM3D2 (2.0) 用
-│   ├── COM3D2.PostEffects.Plugin.dll
+│   ├── COM3D25.PostEffects.Plugin.dll
 │   └── Config\
 │       └── PostEffects\
 └── UnityInjector (COM3D2.5)\         ← COM3D2.5 用
@@ -39,8 +39,9 @@ COM3D25.PostEffects.Plugin\
 ```
 
 各ファイルの説明:
-- `COM3D25.PostEffects.Plugin.dll` / `COM3D2.PostEffects.Plugin.dll`
-  - プラグインの本体。バージョンに合った方だけを入れてください。
+- `COM3D25.PostEffects.Plugin.dll`
+  - プラグインの本体。dll 名は両バージョン共通ですが中身が異なるため、
+    バージョンに合ったフォルダのものを入れてください。
 - `Config\PostEffects\`
   - シェーダーバンドル・テクスチャ・サンプルプリセット等。**必須**。
   - 入れ忘れると、ゲーム内蔵エフェクト以外が動作しません。
