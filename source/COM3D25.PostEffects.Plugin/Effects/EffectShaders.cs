@@ -40,7 +40,7 @@ namespace COM3D25.PostEffects.Plugin
                 return shader;
             }
 
-            var bundle = GetBundle(bundleName, assetName);
+            var bundle = GetBundle(bundleName);
             if (bundle == null)
             {
                 return null;
@@ -55,12 +55,18 @@ namespace COM3D25.PostEffects.Plugin
             return shader;
         }
 
-        private static AssetBundle GetBundle(string name, string assetName)
+        private static AssetBundle GetBundle(string name)
         {
             AssetBundle bundle;
             if (_bundles.TryGetValue(name, out bundle))
             {
-                return bundle;
+                // 共用元プラグインが Unload するとバンドルは破棄済みになる。
+                // 破棄済みバンドルへの LoadAsset は例外を投げるため、捨てて読み直す
+                if (bundle != null)
+                {
+                    return bundle;
+                }
+                _bundles.Remove(name);
             }
             if (_failedBundles.Contains(name))
             {
@@ -73,11 +79,20 @@ namespace COM3D25.PostEffects.Plugin
             {
                 // 他プラグイン (ShaderChange 等) が同一内容のバンドルを先に読み込んでいると
                 // Unity が二重ロードを拒否するため、ロード済みのものを探して共用する
-                bundle = FindLoadedBundle(name, assetName);
+                bundle = FindLoadedBundle(name);
             }
             if (bundle == null)
             {
-                MTEUtils.LogError("シェーダーバンドルの読込に失敗しました: {0}", path);
+                // ファイル自体が無いケースは原因が全く違うので切り分けられるようにする
+                if (!File.Exists(path))
+                {
+                    MTEUtils.LogError(
+                        "シェーダーバンドルが見つかりません: {0} (Config\\PostEffects をコピーし忘れていませんか?)", path);
+                }
+                else
+                {
+                    MTEUtils.LogError("シェーダーバンドルの読込に失敗しました: {0}", path);
+                }
                 _failedBundles.Add(name);
                 return null;
             }
@@ -87,16 +102,18 @@ namespace COM3D25.PostEffects.Plugin
         }
 
         /// <summary>
-        /// ロード済みの AssetBundle から目的のものを探す。
+        /// ロード済みの AssetBundle から同名のものを探す。
         /// Unity 5.6 (COM3D2) には AssetBundle.GetAllLoadedAssetBundles が無いため
-        /// 両バージョンで動く Resources.FindObjectsOfTypeAll で代用している。
-        /// 見つけたバンドルは他プラグインの所有物なので Unload してはいけない
+        /// 両バージョンで動く Resources.FindObjectsOfTypeAll で代用している
         /// </summary>
-        private static AssetBundle FindLoadedBundle(string name, string assetName)
+        /// <remarks>
+        /// 戻り値は他プラグインの所有物なので、呼び出し側で Unload してはいけない。
+        /// 二重ロードを拒否されたバンドルは中身が同一＝バンドル名も同一なので、
+        /// 名前一致だけで判定する (アセット名で探すと無関係なバンドルを掴む恐れがある)
+        /// </remarks>
+        private static AssetBundle FindLoadedBundle(string name)
         {
             var loaded = Resources.FindObjectsOfTypeAll<AssetBundle>();
-            AssetBundle fallback = null;
-
             foreach (var candidate in loaded)
             {
                 if (candidate == null)
@@ -108,20 +125,8 @@ namespace COM3D25.PostEffects.Plugin
                     MTEUtils.LogWarning("シェーダーバンドルは他プラグインが読込済みのため共用します: {0}", name);
                     return candidate;
                 }
-                // バンドル名が一致しない場合に備え、目的のシェーダーを持つものを次善の候補にする
-                if (fallback == null && candidate.Contains(assetName))
-                {
-                    fallback = candidate;
-                }
             }
-
-            if (fallback != null)
-            {
-                MTEUtils.LogWarning(
-                    "シェーダー {0} を他プラグインの読込済みバンドル {1} から取得します ({2} は読込できませんでした)",
-                    assetName, fallback.name, name);
-            }
-            return fallback;
+            return null;
         }
     }
 }
