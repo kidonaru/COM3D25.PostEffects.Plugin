@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using COM3D2.MotionTimelineEditor;
@@ -39,7 +40,7 @@ namespace COM3D25.PostEffects.Plugin
                 return shader;
             }
 
-            var bundle = GetBundle(bundleName);
+            var bundle = GetBundle(bundleName, assetName);
             if (bundle == null)
             {
                 return null;
@@ -54,7 +55,7 @@ namespace COM3D25.PostEffects.Plugin
             return shader;
         }
 
-        private static AssetBundle GetBundle(string name)
+        private static AssetBundle GetBundle(string name, string assetName)
         {
             AssetBundle bundle;
             if (_bundles.TryGetValue(name, out bundle))
@@ -70,6 +71,12 @@ namespace COM3D25.PostEffects.Plugin
             bundle = AssetBundle.LoadFromFile(path);
             if (bundle == null)
             {
+                // 他プラグイン (ShaderChange 等) が同一内容のバンドルを先に読み込んでいると
+                // Unity が二重ロードを拒否するため、ロード済みのものを探して共用する
+                bundle = FindLoadedBundle(name, assetName);
+            }
+            if (bundle == null)
+            {
                 MTEUtils.LogError("シェーダーバンドルの読込に失敗しました: {0}", path);
                 _failedBundles.Add(name);
                 return null;
@@ -77,6 +84,44 @@ namespace COM3D25.PostEffects.Plugin
 
             _bundles[name] = bundle;
             return bundle;
+        }
+
+        /// <summary>
+        /// ロード済みの AssetBundle から目的のものを探す。
+        /// Unity 5.6 (COM3D2) には AssetBundle.GetAllLoadedAssetBundles が無いため
+        /// 両バージョンで動く Resources.FindObjectsOfTypeAll で代用している。
+        /// 見つけたバンドルは他プラグインの所有物なので Unload してはいけない
+        /// </summary>
+        private static AssetBundle FindLoadedBundle(string name, string assetName)
+        {
+            var loaded = Resources.FindObjectsOfTypeAll<AssetBundle>();
+            AssetBundle fallback = null;
+
+            foreach (var candidate in loaded)
+            {
+                if (candidate == null)
+                {
+                    continue;
+                }
+                if (string.Equals(candidate.name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    MTEUtils.LogWarning("シェーダーバンドルは他プラグインが読込済みのため共用します: {0}", name);
+                    return candidate;
+                }
+                // バンドル名が一致しない場合に備え、目的のシェーダーを持つものを次善の候補にする
+                if (fallback == null && candidate.Contains(assetName))
+                {
+                    fallback = candidate;
+                }
+            }
+
+            if (fallback != null)
+            {
+                MTEUtils.LogWarning(
+                    "シェーダー {0} を他プラグインの読込済みバンドル {1} から取得します ({2} は読込できませんでした)",
+                    assetName, fallback.name, name);
+            }
+            return fallback;
         }
     }
 }
