@@ -12,9 +12,11 @@
     <Deterministic>true</Deterministic>
     <!-- GameVersion: COM3D25 (既定) または COM3D2。build.bat から /p:GameVersion= で指定する -->
     <GameVersion Condition=" '$(GameVersion)' == '' ">COM3D25</GameVersion>
-    <!-- ゲームのインストール先。.env から build.bat 経由で渡される。未指定時は従来の相対パス -->
-    <COM3D2_DIR Condition=" '$(COM3D2_DIR)' == '' ">..\..\..\..</COM3D2_DIR>
+    <!-- ゲームのインストール先。.env から build.bat 経由で渡される -->
+    <!-- COM3D25_DIR は未指定時は従来どおり相対パス (リポジトリがゲーム配下に置かれている前提) -->
     <COM3D25_DIR Condition=" '$(COM3D25_DIR)' == '' ">..\..\..\..</COM3D25_DIR>
+    <!-- COM3D2_DIR には既定値を置かない。2.5 用の相対パスを流用すると
+         COM3D2 ビルドが誤って 2.5 のアセンブリを参照してしまうため、未指定はエラーにする -->
     <GameDir Condition=" '$(GameVersion)' == 'COM3D2' ">$(COM3D2_DIR)</GameDir>
     <GameDir Condition=" '$(GameVersion)' == 'COM3D25' ">$(COM3D25_DIR)</GameDir>
   </PropertyGroup>
@@ -50,6 +52,8 @@
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <AssemblyName>COM3D2.PostEffects.Plugin</AssemblyName>
     <OutputPath>$(OutputPath)COM3D2\</OutputPath>
+    <!-- 中間出力も分ける (COM3D2.5 と obj を共有すると並行ビルド時に書き込みが競合する) -->
+    <IntermediateOutputPath>obj\$(Configuration)\COM3D2\</IntermediateOutputPath>
   </PropertyGroup>
   <!-- 両バージョン共通の参照 -->
   <ItemGroup>
@@ -267,4 +271,8 @@
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- GameDir が空のままだと参照解決が不可解な形で失敗するため、原因が分かる形で止める -->
+  <Target Name="ValidateGameDir" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition=" '$(GameDir)' == '' " Text="ゲームのインストール先が未指定です (GameVersion=$(GameVersion))。build.bat 経由で実行するか、/p:COM3D2_DIR= を指定してください" />
+  </Target>
 </Project>

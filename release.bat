@@ -35,6 +35,10 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 del /q "output\%PLUGIN_NAME%\UnityInjector (COM3D2)\%PLUGIN_NAME%.dll"
+if %ERRORLEVEL% neq 0 (
+    echo COM3D2 版フォルダからの COM3D2.5 版 dll の削除に失敗しました
+    exit /b 1
+)
 xcopy UnityInjector20 "output\%PLUGIN_NAME%\UnityInjector (COM3D2)" /E /I /Y
 if %ERRORLEVEL% neq 0 (
     echo COM3D2 版の差分コピーに失敗しました

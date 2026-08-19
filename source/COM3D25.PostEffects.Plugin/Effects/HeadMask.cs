@@ -12,7 +12,8 @@ namespace COM3D25.PostEffects.Plugin
     {
         // 親ボーンが "Bip01 Head" のスロット群を顔系と髪系に分けた固定リスト
         // (TBody.m_strDefSlotName の親ボーン定義に基づく)。
-        // 「顔にかけない + 髪には適用」でマスクを分けるため 2 グループで収集する
+        // 「顔にかけない + 髪には適用」でマスクを分けるため 2 グループで収集する。
+        // #if COM3D25 で囲った要素は COM3D2 (2.0) の TBody.SlotID には存在しないスロット
 
         // 顔面に付くスロット (顔・目・歯・鼻・めがね・顔アクセ)
         private static readonly TBody.SlotID[] FaceSlots =
@@ -20,7 +21,6 @@ namespace COM3D25.PostEffects.Plugin
             TBody.SlotID.head, TBody.SlotID.eye,
             TBody.SlotID.accHa, TBody.SlotID.accHana, TBody.SlotID.megane,
 #if COM3D25
-            // COM3D2 (2.0) の TBody.SlotID には存在しないスロット
             TBody.SlotID.accFace,
 #endif
         };
@@ -36,7 +36,6 @@ namespace COM3D25.PostEffects.Plugin
             TBody.SlotID.accKami_1_, TBody.SlotID.accKami_2_, TBody.SlotID.accKami_3_,
             TBody.SlotID.accKamiSubR, TBody.SlotID.accKamiSubL,
 #if COM3D25
-            // COM3D2 (2.0) の TBody.SlotID には存在しないスロット
             TBody.SlotID.hairS_2, TBody.SlotID.hairT_2,
             TBody.SlotID.accHead_2, TBody.SlotID.accHat_2,
 #endif

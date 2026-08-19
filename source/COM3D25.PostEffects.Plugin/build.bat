@@ -5,6 +5,7 @@ setlocal enabledelayedexpansion
 cd /d %~dp0
 
 set REPO_DIR=%~dp0..\..
+set PROJECT_FILE=COM3D25.PostEffects.Plugin.csproj
 
 set MSBUILD_PATH="C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
 
@@ -44,15 +45,6 @@ if /i not "%TARGET%"=="com3d25" (
     echo COM3D2_DIR: %COM3D2_DIR%
 )
 
-if "%CONFIG%"=="Release" (
-    %MSBUILD_PATH% COM3D25.PostEffects.Plugin.csproj /t:Clean /p:Configuration=Debug
-    %MSBUILD_PATH% COM3D25.PostEffects.Plugin.csproj /t:Clean /p:Configuration=Release
-    if !ERRORLEVEL! neq 0 (
-        echo クリーンビルドに失敗しました
-        exit /b 1
-    )
-)
-
 if /i not "%TARGET%"=="com3d2" (
     call :build_com3d25
     if !ERRORLEVEL! neq 0 exit /b 1
@@ -66,8 +58,21 @@ exit /b 0
 
 rem ============ COM3D2.5 版 ============
 :build_com3d25
+set DLL_NAME=COM3D25.PostEffects.Plugin.dll
+set MSBUILD_ARGS=/p:GameVersion=COM3D25 "/p:COM3D25_DIR=%COM3D25_DIR%"
+
+rem Release はクリーンビルドする。ターゲットごとに出力先が違うので GameVersion を渡すこと
+if "%CONFIG%"=="Release" (
+    %MSBUILD_PATH% %PROJECT_FILE% /t:Clean /p:Configuration=Debug %MSBUILD_ARGS%
+    %MSBUILD_PATH% %PROJECT_FILE% /t:Clean /p:Configuration=Release %MSBUILD_ARGS%
+    if !ERRORLEVEL! neq 0 (
+        echo COM3D2.5 版のクリーンに失敗しました
+        exit /b 1
+    )
+)
+
 echo === ビルド中 ^(COM3D2.5 / %CONFIG%^) ===
-%MSBUILD_PATH% COM3D25.PostEffects.Plugin.csproj /p:Configuration=%CONFIG% /p:GameVersion=COM3D25 "/p:COM3D25_DIR=%COM3D25_DIR%"
+%MSBUILD_PATH% %PROJECT_FILE% /p:Configuration=%CONFIG% %MSBUILD_ARGS%
 if !ERRORLEVEL! neq 0 (
     echo COM3D2.5 版のビルドに失敗しました
     exit /b 1
@@ -75,7 +80,7 @@ if !ERRORLEVEL! neq 0 (
 
 rem リリースパッケージ用に リポジトリ内 UnityInjector へコピー
 if not exist "%REPO_DIR%\UnityInjector" mkdir "%REPO_DIR%\UnityInjector"
-copy /y bin\%CONFIG%\COM3D25.PostEffects.Plugin.dll "%REPO_DIR%\UnityInjector\"
+copy /y bin\%CONFIG%\%DLL_NAME% "%REPO_DIR%\UnityInjector\"
 if !ERRORLEVEL! neq 0 (
     echo dllのコピーに失敗しました
     exit /b 1
@@ -88,7 +93,7 @@ if !ERRORLEVEL! neq 0 (
 )
 
 rem ゲームへのデプロイ ※ゲーム起動中はロックされるため失敗しても続行
-copy /y bin\%CONFIG%\COM3D25.PostEffects.Plugin.dll "%COM3D25_DIR%\Sybaris\UnityInjector\" >nul
+copy /y bin\%CONFIG%\%DLL_NAME% "%COM3D25_DIR%\Sybaris\UnityInjector\" >nul
 if !ERRORLEVEL! neq 0 (
     echo 警告: COM3D2.5 へのデプロイに失敗しました ^(ゲーム起動中?^)
 ) else (
@@ -98,8 +103,22 @@ exit /b 0
 
 rem ============ COM3D2 (2.0) 版 ============
 :build_com3d2
+set DLL_NAME=COM3D2.PostEffects.Plugin.dll
+set MSBUILD_ARGS=/p:GameVersion=COM3D2 "/p:COM3D2_DIR=%COM3D2_DIR%"
+rem COM3D2 版の出力は bin\<Config>\COM3D2\ 配下 (2.5 版と混ざらないよう分けている)
+set OUT_DIR=bin\%CONFIG%\COM3D2
+
+if "%CONFIG%"=="Release" (
+    %MSBUILD_PATH% %PROJECT_FILE% /t:Clean /p:Configuration=Debug %MSBUILD_ARGS%
+    %MSBUILD_PATH% %PROJECT_FILE% /t:Clean /p:Configuration=Release %MSBUILD_ARGS%
+    if !ERRORLEVEL! neq 0 (
+        echo COM3D2 版のクリーンに失敗しました
+        exit /b 1
+    )
+)
+
 echo === ビルド中 ^(COM3D2 / %CONFIG%^) ===
-%MSBUILD_PATH% COM3D25.PostEffects.Plugin.csproj /p:Configuration=%CONFIG% /p:GameVersion=COM3D2 "/p:COM3D2_DIR=%COM3D2_DIR%"
+%MSBUILD_PATH% %PROJECT_FILE% /p:Configuration=%CONFIG% %MSBUILD_ARGS%
 if !ERRORLEVEL! neq 0 (
     echo COM3D2 版のビルドに失敗しました
     exit /b 1
@@ -107,7 +126,7 @@ if !ERRORLEVEL! neq 0 (
 
 rem リリースパッケージ用に リポジトリ内 UnityInjector20 へコピー
 if not exist "%REPO_DIR%\UnityInjector20" mkdir "%REPO_DIR%\UnityInjector20"
-copy /y bin\%CONFIG%\COM3D2\COM3D2.PostEffects.Plugin.dll "%REPO_DIR%\UnityInjector20\"
+copy /y %OUT_DIR%\%DLL_NAME% "%REPO_DIR%\UnityInjector20\"
 if !ERRORLEVEL! neq 0 (
     echo dllのコピーに失敗しました
     exit /b 1
@@ -124,7 +143,7 @@ if !ERRORLEVEL! neq 0 (
 )
 
 rem ゲームへのデプロイ ※ゲーム起動中はロックされるため失敗しても続行
-copy /y bin\%CONFIG%\COM3D2\COM3D2.PostEffects.Plugin.dll "%COM3D2_DIR%\Sybaris\UnityInjector\" >nul
+copy /y %OUT_DIR%\%DLL_NAME% "%COM3D2_DIR%\Sybaris\UnityInjector\" >nul
 if !ERRORLEVEL! neq 0 (
     echo 警告: COM3D2 へのデプロイに失敗しました ^(ゲーム起動中?^)
 ) else (
