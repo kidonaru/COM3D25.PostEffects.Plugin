@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -8,22 +8,22 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>COM3D25.PostEffects.Plugin</RootNamespace>
-    <AssemblyName>COM3D25.PostEffects.Plugin</AssemblyName>
-    <!-- COM3D2.5 (Unity 2022 / .NET 4.x) 専用 -->
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <!-- GameVersion: COM3D25 (既定) または COM3D2。build.bat から /p:GameVersion= で指定する -->
+    <GameVersion Condition=" '$(GameVersion)' == '' ">COM3D25</GameVersion>
     <!-- ゲームのインストール先。.env から build.bat 経由で渡される。未指定時は従来の相対パス -->
+    <COM3D2_DIR Condition=" '$(COM3D2_DIR)' == '' ">..\..\..\..</COM3D2_DIR>
     <COM3D25_DIR Condition=" '$(COM3D25_DIR)' == '' ">..\..\..\..</COM3D25_DIR>
-    <GameDir>$(COM3D25_DIR)</GameDir>
+    <GameDir Condition=" '$(GameVersion)' == 'COM3D2' ">$(COM3D2_DIR)</GameDir>
+    <GameDir Condition=" '$(GameVersion)' == 'COM3D25' ">$(COM3D25_DIR)</GameDir>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <!-- COM3D25: MTEUtils サブモジュール側の COM3D2.5 向け API 分岐を有効にする -->
-    <DefineConstants>DEBUG;TRACE;COM3D25</DefineConstants>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -31,10 +31,27 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;COM3D25</DefineConstants>
+    <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <!-- バージョン定数は GameVersion を単一の情報源として付与する
+       (構成別 PropertyGroup に直書きすると COM3D2 ビルドで両方が定義されてしまう) -->
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);$(GameVersion)</DefineConstants>
+  </PropertyGroup>
+  <!-- COM3D2.5 (Unity 2022 / .NET 4.x) -->
+  <PropertyGroup Condition=" '$(GameVersion)' == 'COM3D25' ">
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
+    <AssemblyName>COM3D25.PostEffects.Plugin</AssemblyName>
+  </PropertyGroup>
+  <!-- COM3D2 (2.0, Unity 5.6 / Mono net35 相当) -->
+  <PropertyGroup Condition=" '$(GameVersion)' == 'COM3D2' ">
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <AssemblyName>COM3D2.PostEffects.Plugin</AssemblyName>
+    <OutputPath>$(OutputPath)COM3D2\</OutputPath>
+  </PropertyGroup>
+  <!-- 両バージョン共通の参照 -->
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
       <HintPath>$(GameDir)\COM3D2x64_Data\Managed\Assembly-CSharp.dll</HintPath>
@@ -45,13 +62,26 @@
     <Reference Include="Assembly-UnityScript-firstpass">
       <HintPath>$(GameDir)\COM3D2x64_Data\Managed\Assembly-UnityScript-firstpass.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(GameDir)\COM3D2x64_Data\Managed\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <!-- COM3D2 (2.0) 専用: UnityInjector.dll の実体があるのでそれを参照する -->
+  <ItemGroup Condition=" '$(GameVersion)' == 'COM3D2' ">
+    <Reference Include="UnityInjector">
+      <HintPath>$(COM3D2_DIR)\Sybaris\lib\UnityInjector.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <!-- COM3D2.5 専用 -->
+  <ItemGroup Condition=" '$(GameVersion)' == 'COM3D25' ">
     <!-- COM3D2.5 には UnityInjector.dll の実体がなく、UnityInjector.PluginBase 等は
          BepInEx.UnityInjectorLoader.dll に含まれるため、そちらを参照する -->
     <Reference Include="BepInEx.UnityInjectorLoader">
       <HintPath>$(GameDir)\BepInEx\plugins\UnityInjectorLoader\BepInEx.UnityInjectorLoader.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine">
-      <HintPath>$(GameDir)\COM3D2x64_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
     <!-- Unity 2022 では UnityEngine がモジュール分割されているため個別参照が必要 -->
     <Reference Include="UnityEngine.CoreModule">
@@ -84,10 +114,6 @@
     <Reference Include="UnityEngine.UnityWebRequestModule">
       <HintPath>$(GameDir)\COM3D2x64_Data\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml" />
-    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Effects\AnalogGlitchController.cs" />
