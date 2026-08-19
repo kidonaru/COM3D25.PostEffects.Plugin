@@ -19,19 +19,27 @@ namespace COM3D25.PostEffects.Plugin
         {
             TBody.SlotID.head, TBody.SlotID.eye,
             TBody.SlotID.accHa, TBody.SlotID.accHana, TBody.SlotID.megane,
+#if COM3D25
+            // COM3D2 (2.0) の TBody.SlotID には存在しないスロット
             TBody.SlotID.accFace,
+#endif
         };
 
         // 髪と頭部装飾のスロット (髪・帽子・カチューシャ・耳/髪アクセ等)
         private static readonly TBody.SlotID[] HairSlots =
         {
-            TBody.SlotID.hairF, TBody.SlotID.hairR, TBody.SlotID.hairS, TBody.SlotID.hairS_2,
-            TBody.SlotID.hairT, TBody.SlotID.hairT_2, TBody.SlotID.hairAho,
-            TBody.SlotID.headset, TBody.SlotID.accHead, TBody.SlotID.accHead_2,
-            TBody.SlotID.accHat, TBody.SlotID.accHat_2,
+            TBody.SlotID.hairF, TBody.SlotID.hairR, TBody.SlotID.hairS,
+            TBody.SlotID.hairT, TBody.SlotID.hairAho,
+            TBody.SlotID.headset, TBody.SlotID.accHead,
+            TBody.SlotID.accHat,
             TBody.SlotID.accMiMiR, TBody.SlotID.accMiMiL,
             TBody.SlotID.accKami_1_, TBody.SlotID.accKami_2_, TBody.SlotID.accKami_3_,
             TBody.SlotID.accKamiSubR, TBody.SlotID.accKamiSubL,
+#if COM3D25
+            // COM3D2 (2.0) の TBody.SlotID には存在しないスロット
+            TBody.SlotID.hairS_2, TBody.SlotID.hairT_2,
+            TBody.SlotID.accHead_2, TBody.SlotID.accHat_2,
+#endif
         };
 
         private static readonly List<Renderer> _faceRenderers = new List<Renderer>();

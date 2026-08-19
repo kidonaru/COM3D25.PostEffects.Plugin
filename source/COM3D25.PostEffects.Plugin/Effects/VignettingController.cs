@@ -2,7 +2,12 @@ using COM3D2.MotionTimelineEditor;
 using UnityEngine;
 // Assembly-UnityScript-firstpass のグローバル名前空間にも旧 Vignetting が残骸として存在するため、
 // ゲームが実際に使う PostEffects_Dummy 側へエイリアスで束縛する
+#if COM3D25
 using VignettingEffect = PostEffects_Dummy.Vignetting;
+#else
+// COM3D2 (2.0) の内蔵エフェクトはグローバル名前空間 (Assembly-UnityScript-firstpass) にある
+using VignettingEffect = global::Vignetting;
+#endif
 
 namespace COM3D25.PostEffects.Plugin
 {

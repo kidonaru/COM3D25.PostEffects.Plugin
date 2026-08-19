@@ -420,8 +420,13 @@ namespace COM3D25.PostEffects.Plugin
             _bokehMaterial.SetVector("_Screen",
                 new Vector3(1f / source.width, 1f / source.height, bokehRadius));
             _bokehMaterial.SetPass(BokehDrawPass);
+#if COM3D25
             // Unity 2022 では即時描画版が DrawProceduralIndirectNow に改名されている
             Graphics.DrawProceduralIndirectNow(MeshTopology.Points, _drawArgsBuffer, 0);
+#else
+            // Unity 5.6 (COM3D2) では改名前の DrawProceduralIndirect が即時描画版
+            Graphics.DrawProceduralIndirect(MeshTopology.Points, _drawArgsBuffer, 0);
+#endif
         }
 
         // 近景の CoC を上下左右へ広げて、ピント内の被写体へぼけが食い込むのを防ぐ

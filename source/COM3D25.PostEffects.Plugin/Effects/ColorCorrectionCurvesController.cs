@@ -3,7 +3,16 @@ using COM3D2.MotionTimelineEditor;
 using UnityEngine;
 // Assembly-UnityScript-firstpass のグローバル名前空間にも旧 ColorCorrectionCurves が残骸として存在するため、
 // ゲームが実際に使う PostEffects_Dummy 側へエイリアスで束縛する
+// ColorCorrectionMode のエイリアス名を型名とずらしているのは、グローバル名前空間の
+// 同名型と衝突して CS0576「エイリアスと競合する定義」になるのを避けるため
+#if COM3D25
 using ColorCorrectionCurvesEffect = PostEffects_Dummy.ColorCorrectionCurves;
+using CorrectionMode = PostEffects_Dummy.ColorCorrectionMode;
+#else
+// COM3D2 (2.0) の内蔵エフェクトはグローバル名前空間 (Assembly-UnityScript-firstpass) にある
+using ColorCorrectionCurvesEffect = global::ColorCorrectionCurves;
+using CorrectionMode = global::ColorCorrectionMode;
+#endif
 
 namespace COM3D25.PostEffects.Plugin
 {
@@ -131,8 +140,8 @@ namespace COM3D25.PostEffects.Plugin
                 : FindShader(ref _selectiveShader, "Hidden/ColorCorrectionSelective");
 
             component.mode = setting.useDepthCorrection
-                ? PostEffects_Dummy.ColorCorrectionMode.Advanced
-                : PostEffects_Dummy.ColorCorrectionMode.Simple;
+                ? CorrectionMode.Advanced
+                : CorrectionMode.Simple;
             component.useDepthCorrection = setting.useDepthCorrection;
             component.saturation = setting.saturation;
             component.selectiveCc = !setting.useDepthCorrection && setting.selectiveCc;
@@ -153,7 +162,7 @@ namespace COM3D25.PostEffects.Plugin
         }
 
         private AnimationCurve[] _capturedChannels;
-        private PostEffects_Dummy.ColorCorrectionMode _capturedMode;
+        private CorrectionMode _capturedMode;
         private Shader _capturedSimpleShader;
         private Shader _capturedCurvesShader;
         private Shader _capturedSelectiveShader;

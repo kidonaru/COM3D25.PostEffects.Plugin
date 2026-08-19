@@ -1,6 +1,11 @@
 using COM3D2.MotionTimelineEditor;
 using UnityEngine;
+#if COM3D25
 using ScreenOverlayEffect = PostEffects_Dummy.ScreenOverlay;
+#else
+// COM3D2 (2.0) の内蔵エフェクトはグローバル名前空間 (Assembly-UnityScript-firstpass) にある
+using ScreenOverlayEffect = global::ScreenOverlay;
+#endif
 
 namespace COM3D25.PostEffects.Plugin
 {
