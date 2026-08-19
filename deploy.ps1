@@ -130,11 +130,15 @@ $downloadUrl = "$repoUrl/releases/download/$tag/$zipName"
 # Markdown のインラインコード用バックティックは `` と 2 つ重ねて書く
 $notes = @"
 ### ダウンロード
-| 対象 | ファイル名 |
-|---|---|
-| **COM3D2.5** | [$zipName]($downloadUrl) |
+[$zipName]($downloadUrl)
 
-``UnityInjector`` フォルダの中身を ``Sybaris\UnityInjector\`` へコピーしてください。
+zip を解凍し、お使いのバージョンに対応したフォルダの中身を ``Sybaris\UnityInjector\`` へコピーしてください。
+
+| 対象 | 同梱フォルダ |
+|---|---|
+| **COM3D2** | ``UnityInjector (COM3D2)`` |
+| **COM3D2.5** | ``UnityInjector`` |
+
 ``Config\PostEffects`` を入れ忘れると内蔵エフェクト以外が動作しません。
 
 ### 変更点

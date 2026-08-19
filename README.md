@@ -1,7 +1,7 @@
 # COM3D25.PostEffects.Plugin
 
-COM3D2.5 のメインカメラに多彩なポストエフェクトを適用し、GUI から制御するプラグイン。
-**COM3D2.5 (Unity 2022) 専用**（COM3D2 2.0 には対応しない）。
+COM3D2 / COM3D2.5 のメインカメラに多彩なポストエフェクトを適用し、GUI から制御するプラグイン。
+**COM3D2 (2.0) と COM3D2.5 (Unity 2022) の両方に対応**（バージョンごとに dll が分かれています）。
 
 https://github.com/user-attachments/assets/becec22f-b537-4a2d-b0e2-8fc74a3debcb
 
@@ -18,14 +18,18 @@ zip を解凍すると次の構成になっています。
 ```
 COM3D25.PostEffects.Plugin\
 ├── README.txt
-└── UnityInjector\
-    ├── COM3D25.PostEffects.Plugin.dll
+├── UnityInjector\                    ← COM3D2.5 用
+│   ├── COM3D25.PostEffects.Plugin.dll
+│   └── Config\
+│       └── PostEffects\
+└── UnityInjector (COM3D2)\           ← COM3D2 (2.0) 用
+    ├── COM3D2.PostEffects.Plugin.dll
     └── Config\
         └── PostEffects\
 ```
 
-`UnityInjector` フォルダの中身を、ゲームフォルダの `Sybaris\UnityInjector\` へそのままコピーしてください。
-配置後は以下のようになります。
+**お使いのバージョンに対応したフォルダ**の中身を、ゲームフォルダの `Sybaris\UnityInjector\` へ
+そのままコピーしてください。配置後は以下のようになります（COM3D2.5 の例）。
 
 ```
 （ゲームフォルダ）\Sybaris\UnityInjector\
@@ -35,13 +39,12 @@ COM3D25.PostEffects.Plugin\
 ```
 
 各ファイルの説明:
-- `COM3D25.PostEffects.Plugin.dll`
-  - プラグインの本体。
+- `COM3D25.PostEffects.Plugin.dll` / `COM3D2.PostEffects.Plugin.dll`
+  - プラグインの本体。バージョンに合った方だけを入れてください。
 - `Config\PostEffects\`
   - シェーダーバンドル・テクスチャ・サンプルプリセット等。**必須**。
   - 入れ忘れると、ゲーム内蔵エフェクト以外が動作しません。
-
-COM3D2.5 専用です。COM3D2 (2.0) には対応していないため、2.0 のフォルダには入れないでください。
+  - シェーダーバンドルはバージョンごとに中身が異なるため、両方のフォルダを混ぜないでください。
 
 COM3D2.5 Ver.3.49.0 で動作確認済みです。
 
