@@ -136,8 +136,8 @@ zip を解凍し、お使いのバージョンに対応したフォルダの中�
 
 | 対象 | 同梱フォルダ |
 |---|---|
-| **COM3D2** | ``UnityInjector (COM3D2)`` |
-| **COM3D2.5** | ``UnityInjector`` |
+| **COM3D2** | ``UnityInjector`` |
+| **COM3D2.5** | ``UnityInjector (COM3D2.5)`` |
 
 ``Config\PostEffects`` を入れ忘れると内蔵エフェクト以外が動作しません。
 

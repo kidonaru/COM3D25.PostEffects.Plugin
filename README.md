@@ -18,12 +18,12 @@ zip を解凍すると次の構成になっています。
 ```
 COM3D25.PostEffects.Plugin\
 ├── README.txt
-├── UnityInjector\                    ← COM3D2.5 用
-│   ├── COM3D25.PostEffects.Plugin.dll
+├── UnityInjector\                    ← COM3D2 (2.0) 用
+│   ├── COM3D2.PostEffects.Plugin.dll
 │   └── Config\
 │       └── PostEffects\
-└── UnityInjector (COM3D2)\           ← COM3D2 (2.0) 用
-    ├── COM3D2.PostEffects.Plugin.dll
+└── UnityInjector (COM3D2.5)\         ← COM3D2.5 用
+    ├── COM3D25.PostEffects.Plugin.dll
     └── Config\
         └── PostEffects\
 ```
@@ -149,8 +149,8 @@ MIT ライセンスのオープンソースを含む。詳細は `UnityInjector\
 ## 変更履歴
 
 ### 2026/08/19 v2.1.0.0
-- COM3D2 (2.0) に対応。zip に COM3D2 用の `UnityInjector (COM3D2)` フォルダを同梱し、
-  バージョンごとの dll とシェーダーバンドルを分けて配布するようにした
+- COM3D2 (2.0) に対応。zip に COM3D2 用の `UnityInjector` / COM3D2.5 用の `UnityInjector (COM3D2.5)`
+  フォルダを同梱し、バージョンごとの dll とシェーダーバンドルを分けて配布するようにした
 - 修正: 他のプラグインが同じシェーダーバンドルを先に読み込んでいる場合、
   読み込みに失敗してエフェクトが動作しなくなる問題を修正
 

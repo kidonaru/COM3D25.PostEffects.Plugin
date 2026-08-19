@@ -21,7 +21,7 @@
 3. リポジトリルートの `debug.bat` を実行（Debug ビルド + ゲームへのデプロイ）
    - Release ビルドは `source\COM3D25.PostEffects.Plugin\build.bat release`
 
-ビルド成果物はリポジトリルートの `UnityInjector\` に集約され、そのままリリースパッケージのレイアウトになる。ビルドスクリプトは同時に `%COM3D25_DIR%\Sybaris\UnityInjector\` へ DLL とシェーダーバンドル（`Config\PostEffects`）をデプロイする（ゲーム起動中は DLL コピーが失敗するが続行される）。
+ビルド成果物はリポジトリルートの `UnityInjector\`（COM3D2 (2.0) 用。共通の `Config\PostEffects` もここで管理）と `UnityInjector (COM3D2.5)\`（COM3D2.5 用の dll と posteffects バンドル差分）に集約され、そのままリリースパッケージのレイアウトになる。ビルドスクリプトは同時に各ゲームの `Sybaris\UnityInjector\` へ DLL とシェーダーバンドル（`Config\PostEffects`）をデプロイする（ゲーム起動中は DLL コピーが失敗するが続行される）。
 
 ## 補足
 
@@ -33,7 +33,8 @@
 自前シェーダー（`UnityProject\Assets\Shaders`）は Unity 2022.3 プロジェクト `UnityProject\` でビルドする。
 
 - エディタスクリプト: `UnityProject\Assets\Editor\BuildShaderBundles.cs`
-- 出力先: `UnityInjector\Config\PostEffects\Shaders\`（リポジトリに同梱してコミットする）
+- 出力先: `UnityInjector (COM3D2.5)\Config\PostEffects\Shaders\`（リポジトリに同梱してコミットする）
+- COM3D2 (2.0) 用の posteffects バンドルは Unity 5.6 でビルドしたものを `UnityInjector\Config\PostEffects\Shaders\` に置く（2022.3 ビルドのバンドルは Unity 5.6 では読み込めない）
 - Unity エディタから、または batchmode で実行できる
 
 同梱シェーダーのライセンス表記は `UnityInjector\Config\PostEffects\License` にまとめている。シェーダーを追加した場合はここにも追記すること。

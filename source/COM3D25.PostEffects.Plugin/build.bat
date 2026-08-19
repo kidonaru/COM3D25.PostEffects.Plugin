@@ -78,18 +78,22 @@ if !ERRORLEVEL! neq 0 (
     exit /b 1
 )
 
-rem リリースパッケージ用に リポジトリ内 UnityInjector へコピー
-if not exist "%REPO_DIR%\UnityInjector" mkdir "%REPO_DIR%\UnityInjector"
-copy /y bin\%CONFIG%\%DLL_NAME% "%REPO_DIR%\UnityInjector\"
+rem リリースパッケージ用に リポジトリ内 UnityInjector (COM3D2.5) へコピー
+if not exist "%REPO_DIR%\UnityInjector (COM3D2.5)" mkdir "%REPO_DIR%\UnityInjector (COM3D2.5)"
+copy /y bin\%CONFIG%\%DLL_NAME% "%REPO_DIR%\UnityInjector (COM3D2.5)\"
 if !ERRORLEVEL! neq 0 (
     echo dllのコピーに失敗しました
     exit /b 1
 )
 
-rem シェーダーバンドルのデプロイ (リポジトリ同梱の Config をゲームへコピー)
+rem シェーダーバンドルのデプロイ (共通の Config を入れた後、2.5 用 posteffects で上書きする)
 xcopy /y /e /i /q "%REPO_DIR%\UnityInjector\Config\PostEffects" "%COM3D25_DIR%\Sybaris\UnityInjector\Config\PostEffects" >nul
 if !ERRORLEVEL! neq 0 (
     echo 警告: シェーダーバンドルのデプロイに失敗しました
+)
+xcopy /y /e /i /q "%REPO_DIR%\UnityInjector (COM3D2.5)\Config\PostEffects" "%COM3D25_DIR%\Sybaris\UnityInjector\Config\PostEffects" >nul
+if !ERRORLEVEL! neq 0 (
+    echo 警告: COM3D2.5 用シェーダーバンドルのデプロイに失敗しました
 )
 
 rem ゲームへのデプロイ ※ゲーム起動中はロックされるため失敗しても続行
@@ -124,22 +128,19 @@ if !ERRORLEVEL! neq 0 (
     exit /b 1
 )
 
-rem リリースパッケージ用に リポジトリ内 UnityInjector20 へコピー
-if not exist "%REPO_DIR%\UnityInjector20" mkdir "%REPO_DIR%\UnityInjector20"
-copy /y %OUT_DIR%\%DLL_NAME% "%REPO_DIR%\UnityInjector20\"
+rem リリースパッケージ用に リポジトリ内 UnityInjector へコピー
+rem (UnityInjector は COM3D2 (2.0) 用。共通 Config と 2.0 用 posteffects もここで管理する)
+if not exist "%REPO_DIR%\UnityInjector" mkdir "%REPO_DIR%\UnityInjector"
+copy /y %OUT_DIR%\%DLL_NAME% "%REPO_DIR%\UnityInjector\"
 if !ERRORLEVEL! neq 0 (
     echo dllのコピーに失敗しました
     exit /b 1
 )
 
-rem シェーダーバンドルのデプロイ (共通の Config を入れた後、2.0 用 posteffects で上書きする)
+rem シェーダーバンドルのデプロイ (UnityInjector の Config は 2.0 用 posteffects 込みなのでそのままコピー)
 xcopy /y /e /i /q "%REPO_DIR%\UnityInjector\Config\PostEffects" "%COM3D2_DIR%\Sybaris\UnityInjector\Config\PostEffects" >nul
 if !ERRORLEVEL! neq 0 (
     echo 警告: シェーダーバンドルのデプロイに失敗しました
-)
-xcopy /y /e /i /q "%REPO_DIR%\UnityInjector20\Config\PostEffects" "%COM3D2_DIR%\Sybaris\UnityInjector\Config\PostEffects" >nul
-if !ERRORLEVEL! neq 0 (
-    echo 警告: COM3D2 用シェーダーバンドルのデプロイに失敗しました
 )
 
 rem ゲームへのデプロイ ※ゲーム起動中はロックされるため失敗しても続行

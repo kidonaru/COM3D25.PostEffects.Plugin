@@ -9,5 +9,5 @@
 *.csproj
 *.sln
 
-# バンドルビルド出力 (デプロイ先は UnityInjector/Config/PostEffects/Shaders で管理)
+# バンドルビルド出力 (デプロイ先は UnityInjector (COM3D2.5)/Config/PostEffects/Shaders で管理)
 /AssetBundles/
