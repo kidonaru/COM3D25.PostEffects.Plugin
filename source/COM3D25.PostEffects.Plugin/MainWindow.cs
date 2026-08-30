@@ -33,9 +33,12 @@ namespace COM3D25.PostEffects.Plugin
             labelWidth = 70,
         };
 
-        private static readonly string[] ModeNames = { "エフェクト", "プリセット" };
+        private static readonly string[] ModeNames = { "エフェクト", "タイムライン", "プリセット" };
 
-        private int _modeIndex = 0;  // 0: エフェクト, 1: プリセット
+        private int _modeIndex = 0;  // 0: エフェクト, 1: タイムライン, 2: プリセット
+
+        // タイムライン対応 5 系統。表示順は SceneEditor のポストエフェクトレイヤーの項目順に合わせる
+        private readonly List<EffectControllerBase> _timelineControllers = new List<EffectControllerBase>();
         private string _presetName = "";
 
         private GUIView _rootView = new GUIView();
@@ -159,6 +162,10 @@ namespace COM3D25.PostEffects.Plugin
             {
                 DrawEffectContent(view);
             }
+            else if (_modeIndex == 1)
+            {
+                DrawTimelineContent(view);
+            }
             else
             {
                 DrawPresetContent(view);
@@ -204,6 +211,45 @@ namespace COM3D25.PostEffects.Plugin
                 }
             }
             view.EndScrollView();
+        }
+
+        /// <summary>
+        /// タイムライン対応 5 系統の集約ビュー。
+        /// SceneEditor のタイムラインが駆動する対象をまとめて確認・編集するためのタブで、
+        /// 描画は既存の DrawEffectRow をそのまま使う (個別タブと同じ操作性)
+        /// </summary>
+        private void DrawTimelineContent(GUIView view)
+        {
+            view.DrawLabel("タイムライン対応エフェクト", -1, 20);
+            view.DrawHorizontalLine(Color.gray);
+            view.AddSpace(5);
+
+            view.BeginScrollView(-1, GetScrollHeight(view), GUIView.AutoScrollViewRect, false, true);
+            {
+                if (_timelineControllers.Count == 0)
+                {
+                    InitTimelineControllers();
+                }
+                foreach (var controller in _timelineControllers)
+                {
+                    DrawEffectRow(view, controller);
+                }
+            }
+            view.EndScrollView();
+        }
+
+        // コントローラ登録の完了後に確実に解決させるため、描画時に遅延で組み立てる
+        private void InitTimelineControllers()
+        {
+            _timelineControllers.Clear();
+            var manager = postEffectManager;
+            _timelineControllers.Add(manager.GetController<DepthOfFieldController>());
+            _timelineControllers.Add(manager.GetController<GTToneMapController>());
+            _timelineControllers.Add(manager.GetController<ParaffinController>());
+            _timelineControllers.Add(manager.GetController<DistanceFogController>());
+            _timelineControllers.Add(manager.GetController<RimlightController>());
+            // 登録前に呼ばれた場合に null を掴まないよう除去する
+            _timelineControllers.RemoveAll(c => c == null);
         }
 
         // カテゴリ内のエフェクトをまとめて無効化し、値も初期状態へ戻す
