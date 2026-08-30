@@ -238,7 +238,8 @@ namespace COM3D25.PostEffects.Plugin
             view.EndScrollView();
         }
 
-        // コントローラ登録の完了後に確実に解決させるため、描画時に遅延で組み立てる
+        // コントローラ登録の完了後に確実に解決させるため、描画時に遅延で組み立てる。
+        // 1 件も解決できなければ空のままなので、呼び出し側は次回描画で再試行する
         private void InitTimelineControllers()
         {
             _timelineControllers.Clear();
