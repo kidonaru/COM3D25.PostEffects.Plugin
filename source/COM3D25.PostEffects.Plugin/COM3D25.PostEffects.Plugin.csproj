@@ -253,6 +253,7 @@
     <Compile Include="COM3D25.PostEffects.Plugin.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="EffectSettings.cs" />
+    <Compile Include="TimelineBridge.cs" />
     <Compile Include="MainWindow.cs" />
     <Compile Include="PluginInfo.cs" />
     <Compile Include="PluginResources.cs" />
