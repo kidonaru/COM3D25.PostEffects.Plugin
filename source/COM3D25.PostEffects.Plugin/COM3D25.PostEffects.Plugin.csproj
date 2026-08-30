@@ -243,6 +243,8 @@
     <Compile Include="MTEUtils\MainThreadDispatcher.cs" />
     <Compile Include="MTEUtils\ManagerRegistry.cs" />
     <Compile Include="MTEUtils\NaturalStringComparer.cs" />
+    <Compile Include="MTEUtils\PostEffectData.cs" />
+    <Compile Include="MTEUtils\ReflectionFieldCopier.cs" />
     <Compile Include="MTEUtils\ResizeCursor.cs" />
     <Compile Include="MTEUtils\TabBarDrawer.cs" />
     <Compile Include="MTEUtils\TexturePickerWindow.cs" />
