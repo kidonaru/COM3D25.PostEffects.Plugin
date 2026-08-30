@@ -1,139 +1,200 @@
 using System;
 using UnityEngine;
+using COM3D2.MotionTimelineEditor;
+using PEData = COM3D2.MotionTimelineEditor.PostEffects;
 
 namespace COM3D25.PostEffects.Plugin
 {
     /// <summary>
     /// SceneEditor のタイムラインからポストエフェクトを駆動するための公開 API。
-    /// 再生中は毎フレーム呼ばれるため、XML やリフレクションを挟まず設定値を直接読み書きする。
+    /// SceneEditor はこのクラスをリフレクションで解決するため、
+    /// **メソッド名・引数の個数と型を変えると連携が黙って切れる**。
+    /// 値の受け渡しは MTEUtils の共有 DTO で行い、実体型との相互コピーはここで閉じる。
+    /// 再生中は毎フレーム呼ばれるため、XML を挟まず設定値を直接読み書きする。
     /// 対象はタイムライン対応 5 系統 (DoF / GTToneMap / パラフィン / 距離フォグ / リムライト) のみ
     /// </summary>
     public static class TimelineBridge
     {
-        // 各系統の上限。実体側のシェーダーバッファ上限と同値で、SceneEditor 側 UI もこれを参照する
-        // (参照元の MAX_*_COUNT が static readonly のため const にはできない)
-        public static readonly int MaxParaffinCount = ColorParaffinEffectModel.MAX_PARAFFIN_COUNT;
-        public static readonly int MaxDistanceFogCount = DistanceFogEffectModel.MAX_FOG_COUNT;
-        public static readonly int MaxRimlightCount = RimlightEffectModel.MAX_RIMLIGHT_COUNT;
-
         private static EffectSettings settings => EffectSettings.instance;
 
-        /// <summary>パラフィンのデータ数。set は上限で丸めて増減する</summary>
-        public static int paraffinCount
+        // 各系統の上限。実体側のシェーダーバッファ上限と同値
+        public static int GetMaxParaffinCount()
         {
-            get => settings.paraffin.GetDataCount();
-            set => ResizeData(
+            return ColorParaffinEffectModel.MAX_PARAFFIN_COUNT;
+        }
+
+        public static int GetMaxDistanceFogCount()
+        {
+            return DistanceFogEffectModel.MAX_FOG_COUNT;
+        }
+
+        public static int GetMaxRimlightCount()
+        {
+            return RimlightEffectModel.MAX_RIMLIGHT_COUNT;
+        }
+
+        public static int GetParaffinCount()
+        {
+            return settings.paraffin.GetDataCount();
+        }
+
+        /// <summary>パラフィンのデータ数。上限で丸めて 1 件ずつ増減する</summary>
+        public static void SetParaffinCount(int value)
+        {
+            ResizeData(
                 settings.paraffin.GetDataCount(),
-                Mathf.Clamp(value, 0, MaxParaffinCount),
+                Mathf.Clamp(value, 0, GetMaxParaffinCount()),
                 () => settings.paraffin.AddData(new ColorParaffinData()),
                 () => settings.paraffin.RemoveDataLast());
         }
 
-        public static bool paraffinEnabled
+        public static bool GetParaffinEnabled()
         {
-            get => settings.paraffin.enabled;
-            set { settings.paraffin.enabled = value; settings.dirty = true; }
+            return settings.paraffin.enabled;
         }
 
-        public static ColorParaffinData GetParaffinData(int index)
+        public static void SetParaffinEnabled(bool value)
         {
-            return settings.paraffin.GetData(index);
+            settings.paraffin.enabled = value;
+            settings.dirty = true;
         }
 
-        public static void ApplyParaffin(int index, ColorParaffinData data)
+        public static PEData.ParaffinData GetParaffinData(int index)
+        {
+            var dto = new PEData.ParaffinData();
+            ReflectionFieldCopier.Copy(settings.paraffin.GetData(index), dto);
+            return dto;
+        }
+
+        public static void ApplyParaffin(int index, PEData.ParaffinData data)
         {
             // 個別データが有効なら系統ごと有効化する (SceneEditor 旧実装と同じ規約)
             if (data.enabled)
             {
                 settings.paraffin.enabled = true;
             }
-            settings.paraffin.SetData(index, data);
+            var native = new ColorParaffinData();
+            ReflectionFieldCopier.Copy(data, native);
+            settings.paraffin.SetData(index, native);
             settings.dirty = true;
         }
 
-        /// <summary>距離フォグのデータ数。set は上限で丸めて増減する</summary>
-        public static int distanceFogCount
+        public static int GetDistanceFogCount()
         {
-            get => settings.distanceFog.GetDataCount();
-            set => ResizeData(
+            return settings.distanceFog.GetDataCount();
+        }
+
+        /// <summary>距離フォグのデータ数。上限で丸めて 1 件ずつ増減する</summary>
+        public static void SetDistanceFogCount(int value)
+        {
+            ResizeData(
                 settings.distanceFog.GetDataCount(),
-                Mathf.Clamp(value, 0, MaxDistanceFogCount),
+                Mathf.Clamp(value, 0, GetMaxDistanceFogCount()),
                 () => settings.distanceFog.AddData(new DistanceFogData()),
                 () => settings.distanceFog.RemoveDataLast());
         }
 
-        public static bool distanceFogEnabled
+        public static bool GetDistanceFogEnabled()
         {
-            get => settings.distanceFog.enabled;
-            set { settings.distanceFog.enabled = value; settings.dirty = true; }
+            return settings.distanceFog.enabled;
         }
 
-        public static DistanceFogData GetDistanceFogData(int index)
+        public static void SetDistanceFogEnabled(bool value)
         {
-            return settings.distanceFog.GetData(index);
+            settings.distanceFog.enabled = value;
+            settings.dirty = true;
         }
 
-        public static void ApplyDistanceFog(int index, DistanceFogData data)
+        public static PEData.DistanceFogData GetDistanceFogData(int index)
+        {
+            var dto = new PEData.DistanceFogData();
+            ReflectionFieldCopier.Copy(settings.distanceFog.GetData(index), dto);
+            return dto;
+        }
+
+        public static void ApplyDistanceFog(int index, PEData.DistanceFogData data)
         {
             if (data.enabled)
             {
                 settings.distanceFog.enabled = true;
             }
-            settings.distanceFog.SetData(index, data);
+            var native = new DistanceFogData();
+            ReflectionFieldCopier.Copy(data, native);
+            settings.distanceFog.SetData(index, native);
             settings.dirty = true;
         }
 
-        /// <summary>リムライトのデータ数。set は上限で丸めて増減する</summary>
-        public static int rimlightCount
+        public static int GetRimlightCount()
         {
-            get => settings.rimlight.GetDataCount();
-            set => ResizeData(
+            return settings.rimlight.GetDataCount();
+        }
+
+        /// <summary>リムライトのデータ数。上限で丸めて 1 件ずつ増減する</summary>
+        public static void SetRimlightCount(int value)
+        {
+            ResizeData(
                 settings.rimlight.GetDataCount(),
-                Mathf.Clamp(value, 0, MaxRimlightCount),
+                Mathf.Clamp(value, 0, GetMaxRimlightCount()),
                 () => settings.rimlight.AddData(new RimlightData()),
                 () => settings.rimlight.RemoveDataLast());
         }
 
-        public static bool rimlightEnabled
+        public static bool GetRimlightEnabled()
         {
-            get => settings.rimlight.enabled;
-            set { settings.rimlight.enabled = value; settings.dirty = true; }
+            return settings.rimlight.enabled;
         }
 
-        public static RimlightData GetRimlightData(int index)
+        public static void SetRimlightEnabled(bool value)
         {
-            return settings.rimlight.GetData(index);
+            settings.rimlight.enabled = value;
+            settings.dirty = true;
         }
 
-        public static void ApplyRimlight(int index, RimlightData data)
+        public static PEData.RimlightData GetRimlightData(int index)
+        {
+            var dto = new PEData.RimlightData();
+            ReflectionFieldCopier.Copy(settings.rimlight.GetData(index), dto);
+            return dto;
+        }
+
+        public static void ApplyRimlight(int index, PEData.RimlightData data)
         {
             if (data.enabled)
             {
                 settings.rimlight.enabled = true;
             }
-            settings.rimlight.SetData(index, data);
+            var native = new RimlightData();
+            ReflectionFieldCopier.Copy(data, native);
+            settings.rimlight.SetData(index, native);
             settings.dirty = true;
         }
 
-        public static GTToneMapSetting GetGTToneMap()
+        public static PEData.GTToneMapData GetGTToneMap()
         {
-            return settings.gtToneMap;
+            var dto = new PEData.GTToneMapData();
+            ReflectionFieldCopier.Copy(settings.gtToneMap, dto);
+            return dto;
         }
 
-        public static void ApplyGTToneMap(GTToneMapSetting data)
+        public static void ApplyGTToneMap(PEData.GTToneMapData data)
         {
-            settings.gtToneMap = data;
+            // 実体は差し替えず、既存インスタンスへ写す
+            // (他のコントローラが同じ参照を握っているため)
+            ReflectionFieldCopier.Copy(data, settings.gtToneMap);
             settings.dirty = true;
         }
 
-        public static DepthOfFieldSetting GetDepthOfField()
+        public static PEData.DepthOfFieldData GetDepthOfField()
         {
-            return settings.depthOfField;
+            var dto = new PEData.DepthOfFieldData();
+            ReflectionFieldCopier.Copy(settings.depthOfField, dto);
+            return dto;
         }
 
-        public static void ApplyDepthOfField(DepthOfFieldSetting data)
+        public static void ApplyDepthOfField(PEData.DepthOfFieldData data)
         {
-            settings.depthOfField = data;
+            // DTO は DX11 ボケ等の項目を持たないため、写らない項目は実体側の値が残る
+            ReflectionFieldCopier.Copy(data, settings.depthOfField);
             settings.dirty = true;
         }
 
