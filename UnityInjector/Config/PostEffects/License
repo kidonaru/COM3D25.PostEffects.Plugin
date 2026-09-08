@@ -140,6 +140,7 @@ imageeffects バンドルに含まれるシェーダーは Unity 同梱の Stand
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 posteffects バンドルのシェーダーは本プラグインのオリジナル実装です。
+OutlineColor（輪郭の色にじみ）も本プラグインのオリジナル実装です。
 うち CasSharpen は AMD FidelityFX CAS (Contrast Adaptive Sharpening,
 https://github.com/GPUOpen-Effects/FidelityFX-CAS / MIT License /
 Copyright (c) 2017-2019 Advanced Micro Devices, Inc.) のアルゴリズムを参考に

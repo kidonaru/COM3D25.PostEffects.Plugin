@@ -21,6 +21,7 @@ public static class BuildShaderBundles
                 "Assets/Shaders/CharMaskChannel.shader",
                 "Assets/Shaders/ObscuranceMask.shader",
                 "Assets/Shaders/CharMaskComposite.shader",
+                "Assets/Shaders/OutlineColor.shader",
                 "Assets/Shaders/Diffusion.shader",
                 "Assets/Shaders/CasSharpen.shader",
                 "Assets/Shaders/Halftone.shader",

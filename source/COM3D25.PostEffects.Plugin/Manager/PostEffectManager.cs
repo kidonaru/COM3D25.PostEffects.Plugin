@@ -68,6 +68,9 @@ namespace COM3D25.PostEffects.Plugin
             Add(EffectCategory.Dof, nameof(EffectSettings.filmicMedianFilter), new FilmicMedianFilterController());
 
             Add(EffectCategory.EdgeLine, nameof(EffectSettings.edgeDetect), new EdgeDetectController());
+#if COM3D25
+            Add(EffectCategory.EdgeLine, nameof(EffectSettings.outlineColor), new OutlineColorController());
+#endif
             Add(EffectCategory.EdgeLine, nameof(EffectSettings.crease), new CreaseController());
             Add(EffectCategory.EdgeLine, nameof(EffectSettings.isoline), new IsolineController());
             Add(EffectCategory.EdgeLine, nameof(EffectSettings.halftone), new HalftoneController());
