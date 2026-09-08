@@ -18,9 +18,11 @@ public static class BuildShaderBundles
             assetNames = new[]
             {
                 "Assets/Shaders/CharMaskWhite.shader",
+                "Assets/Shaders/CharMaskOccluder.shader",
                 "Assets/Shaders/CharMaskChannel.shader",
                 "Assets/Shaders/ObscuranceMask.shader",
                 "Assets/Shaders/CharMaskComposite.shader",
+                "Assets/Shaders/SeparatedBloom.shader",
                 "Assets/Shaders/OutlineColor.shader",
                 "Assets/Shaders/Diffusion.shader",
                 "Assets/Shaders/CasSharpen.shader",

@@ -13,6 +13,7 @@ namespace COM3D25.PostEffects.Plugin
         private static RenderTexture _maskRT;
         private static Material _compositeMaterial;
         private static int _renderedFrame = -1;
+        private static bool _renderedWithOccluders;
         private static int _lastRequestFrame = -1;
 
         // メイドは Charactor レイヤーに配置される。名前解決できない場合は既知の 10 へ落とす
@@ -44,7 +45,7 @@ namespace COM3D25.PostEffects.Plugin
         /// マスクを要求し、フレーム内で未描画なら描画する。
         /// OnRenderImage 中の Camera.Render は非サポートのため、各エフェクトの OnPreCull から呼ぶこと
         /// </summary>
-        public static void Render(Camera targetCamera)
+        public static void Render(Camera targetCamera, bool includeOccluders = false)
         {
             if (targetCamera == null)
             {
@@ -52,7 +53,7 @@ namespace COM3D25.PostEffects.Plugin
             }
 
             _lastRequestFrame = Time.frameCount;
-            if (_renderedFrame == Time.frameCount)
+            if (_renderedFrame == Time.frameCount && (!includeOccluders || _renderedWithOccluders))
             {
                 return;
             }
@@ -64,8 +65,9 @@ namespace COM3D25.PostEffects.Plugin
             }
 
             EnsureResources(targetCamera);
-            RenderMask(targetCamera, maskShader);
+            RenderMask(targetCamera, maskShader, includeOccluders);
             _renderedFrame = Time.frameCount;
+            _renderedWithOccluders = includeOccluders;
         }
 
         /// <summary>
@@ -159,23 +161,41 @@ namespace COM3D25.PostEffects.Plugin
             }
         }
 
-        private static void RenderMask(Camera targetCamera, Shader maskShader)
+        private static void RenderMask(Camera targetCamera, Shader maskShader, bool includeOccluders)
         {
             // メインカメラの視点・投影に毎フレーム追従させる
             _maskCamera.CopyFrom(targetCamera);
             _maskCamera.enabled = false;
             _maskCamera.clearFlags = CameraClearFlags.SolidColor;
             _maskCamera.backgroundColor = Color.black;
-            _maskCamera.cullingMask = characterLayerMask;
+            _maskCamera.cullingMask = targetCamera.cullingMask & characterLayerMask;
             _maskCamera.depthTextureMode = DepthTextureMode.None;
             _maskCamera.renderingPath = RenderingPath.Forward;
             _maskCamera.allowMSAA = false;
             _maskCamera.allowHDR = false;
             _maskCamera.useOcclusionCulling = false;
             _maskCamera.targetTexture = _maskRT;
-            // 置き換えタグを空にして全マテリアルを白塗りで描く
-            _maskCamera.RenderWithShader(maskShader, "");
-            _maskCamera.targetTexture = null;
+            var previousActive = RenderTexture.active;
+            try
+            {
+                var occluder = includeOccluders
+                    ? EffectShaders.GetShader(EffectShaders.PostEffects, "CharMaskOccluder") : null;
+                if (occluder != null && occluder.isSupported)
+                {
+                    // 背景の深度を先に描き、隠れたキャラが背景の発光元を奪うのを防ぐ。
+                    _maskCamera.cullingMask = targetCamera.cullingMask & ~characterLayerMask;
+                    _maskCamera.RenderWithShader(occluder, "RenderType");
+                    _maskCamera.clearFlags = CameraClearFlags.Nothing;
+                    _maskCamera.cullingMask = targetCamera.cullingMask & characterLayerMask;
+                }
+                // 置き換えタグを空にして全マテリアルを白塗りで描く。
+                _maskCamera.RenderWithShader(maskShader, "");
+            }
+            finally
+            {
+                _maskCamera.targetTexture = null;
+                RenderTexture.active = previousActive;
+            }
         }
     }
 

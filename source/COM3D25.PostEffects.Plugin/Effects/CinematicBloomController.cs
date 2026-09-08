@@ -1,9 +1,11 @@
 using COM3D2.MotionTimelineEditor;
+using UnityEngine;
 
 namespace COM3D25.PostEffects.Plugin
 {
     public class CinematicBloomSetting
     {
+        public BloomSeparationSetting separation = new BloomSeparationSetting();
         public bool enabled = false;
         public float threshold = 1.1f;
         public float softKnee = 0.5f;
@@ -18,8 +20,22 @@ namespace COM3D25.PostEffects.Plugin
         public string dirtTexturePath = "";
     }
 
-    public class CinematicBloomController : EffectControllerBase<CinematicBloomEffect, CinematicBloomSetting>
+    public class CinematicBloomController : SeparatedBloomController<CinematicBloomEffect, CinematicBloomSetting>
     {
+        protected override BloomSeparationSetting separation => setting.separation;
+
+        protected override void ApplyCharacterSetting(CinematicBloomEffect component)
+        {
+            component.intensity = separation.characterIntensity;
+            component.threshold = separation.characterThreshold;
+            component.radius = separation.characterRadius;
+        }
+
+        protected override void RenderBloom(CinematicBloomEffect component, RenderTexture source, RenderTexture destination)
+        {
+            component.OnRenderImage(source, destination);
+        }
+
         public override string effectName => "シネマティックブルーム";
 
         protected override CinematicBloomSetting setting
@@ -89,6 +105,7 @@ namespace COM3D25.PostEffects.Plugin
 
         public override void DrawContent(GUIView view)
         {
+            DrawSeparation(view, 2f, 1.1f, 1f, 8f, "半径");
             DrawSlider(view, "しきい値", 0f, 3f, 1.1f, setting.threshold, v => setting.threshold = v);
             DrawSlider(view, "ソフトニー", 0f, 4f, 0.5f, setting.softKnee, v => setting.softKnee = v);
             DrawSlider(view, "半径", 0f, 8f, 1f, setting.radius, v => setting.radius = v);

@@ -8,7 +8,7 @@ namespace COM3D25.PostEffects.Plugin
     /// ブルーム (filmicbloomshader) の結果をさらに光条 (filmicstreakshader) に通して合成する 2 段構えのエフェクト。
     /// 2.5 のゲームアセンブリに型が存在しないため、SceneCapture 同梱実装を自己完結な形で移植したもの
     /// (シェーダーは filmic バンドル)。
-    /// 移植元にあったメイドマスク (EffectMask 連携) は EffectMask 自体が未移植のため省いている
+    /// キャラ・背景の分離は SeparatedBloomEffect からマスク済み入力を受け取って行う
     /// </summary>
     public class FilmicBloomEffect : MonoBehaviour
     {
@@ -80,7 +80,13 @@ namespace COM3D25.PostEffects.Plugin
             }
         }
 
-        private void OnRenderImage(RenderTexture source, RenderTexture destination)
+        private void OnDestroy()
+        {
+            // 分離描画では無効なコンポーネントを手動で描画するため、破棄時にも解放する。
+            OnDisable();
+        }
+
+        public void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
             // 光条段で縮小段が 1 段も作れない極小解像度では中間バッファの取り回しが破綻するため素通しする
             if (bloomShader == null || !bloomShader.isSupported ||

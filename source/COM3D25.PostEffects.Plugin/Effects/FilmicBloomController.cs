@@ -5,6 +5,7 @@ namespace COM3D25.PostEffects.Plugin
 {
     public class FilmicBloomSetting
     {
+        public BloomSeparationSetting separation = new BloomSeparationSetting();
         public bool enabled = false;
         public float threshold = 1.1f;
         public float softKnee = 0.5f;
@@ -27,8 +28,22 @@ namespace COM3D25.PostEffects.Plugin
         public FilmicBloomEffect.BlendMode blendMode = FilmicBloomEffect.BlendMode.Screen;
     }
 
-    public class FilmicBloomController : EffectControllerBase<FilmicBloomEffect, FilmicBloomSetting>
+    public class FilmicBloomController : SeparatedBloomController<FilmicBloomEffect, FilmicBloomSetting>
     {
+        protected override BloomSeparationSetting separation => setting.separation;
+
+        protected override void ApplyCharacterSetting(FilmicBloomEffect component)
+        {
+            component.intensity = separation.characterIntensity;
+            component.threshold = separation.characterThreshold;
+            component.radius = separation.characterRadius;
+        }
+
+        protected override void RenderBloom(FilmicBloomEffect component, RenderTexture source, RenderTexture destination)
+        {
+            component.OnRenderImage(source, destination);
+        }
+
         public override string effectName => "フィルミックブルーム";
 
         private static readonly Color DefaultStreakTint = new Color(0.55f, 0.55f, 0.55f);
@@ -134,6 +149,7 @@ namespace COM3D25.PostEffects.Plugin
 
         public override void DrawContent(GUIView view)
         {
+            DrawSeparation(view, 2f, 1.1f, 1f, 8f, "半径");
             view.DrawLabel("ブルーム", -1, 20);
             DrawSlider(view, "しきい値", 0f, 3f, 1.1f, setting.threshold, v => setting.threshold = v);
             DrawSlider(view, "ソフトニー", 0f, 4f, 0.5f, setting.softKnee, v => setting.softKnee = v);

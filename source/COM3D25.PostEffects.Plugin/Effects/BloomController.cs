@@ -13,6 +13,12 @@ namespace COM3D25.PostEffects.Plugin
 {
     public class BloomSetting
     {
+        public BloomSeparationSetting separation = new BloomSeparationSetting
+        {
+            characterIntensity = 2.1375f,
+            characterThreshold = 0.7f,
+            characterRadius = 3.48f,
+        };
         public bool enabled = false;
         // ゲーム標準のブルーム (CameraMain が毎フレーム有効化する) を強制無効化する
         public bool gameEffectDisabled = false;
@@ -40,8 +46,58 @@ namespace COM3D25.PostEffects.Plugin
         public Color flareColorD = new Color(0.8f, 0.4f, 0f, 0.75f);
     }
 
-    public class BloomController : EffectControllerBase<BloomEffect, BloomSetting>
+    public class BloomController : SeparatedBloomController<BloomEffect, BloomSetting>
     {
+        protected override BloomSeparationSetting separation => setting.separation;
+
+        protected override void ApplyCharacterSetting(BloomEffect component)
+        {
+            component.bloomIntensity = separation.characterIntensity;
+            component.bloomThreshhold = separation.characterThreshold;
+            component.sepBlurSpread = separation.characterRadius;
+        }
+
+        protected override void RenderBloom(BloomEffect component, RenderTexture source, RenderTexture destination)
+        {
+            // 内蔵版はリソース検査失敗時に出力せず戻るため、未初期化画像を合成しない。
+            Graphics.Blit(source, destination);
+            if (source.width < 4 || source.height < 4) return;
+            // 分離入力はカメラの HDR 設定と異なる形式になることがある。
+            // 内蔵 Auto のカメラ判定で HDR を見落とすと Screen 合成で色が反転する。
+            var originalHdr = component.hdr;
+            if (originalHdr == BloomEffect.HDRBloomMode.Auto &&
+                (source.format == RenderTextureFormat.ARGBHalf || source.format == RenderTextureFormat.ARGBFloat))
+                component.hdr = BloomEffect.HDRBloomMode.On;
+            try
+            {
+#if COM3D25
+                // 2.5 の内蔵 Bloom は描画メソッドが非公開。カメラ切替時だけデリゲートを作る。
+                if (_renderTarget != component)
+                {
+                    var method = typeof(BloomEffect).GetMethod("OnRenderImage",
+                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                    if (method == null)
+                        throw new System.InvalidOperationException("内蔵ブルームの描画メソッドが見つかりません");
+                    _render = (System.Action<RenderTexture, RenderTexture>)System.Delegate.CreateDelegate(
+                        typeof(System.Action<RenderTexture, RenderTexture>), component, method);
+                    _renderTarget = component;
+                }
+                _render(source, destination);
+#else
+                component.OnRenderImage(source, destination);
+#endif
+            }
+            finally
+            {
+                component.hdr = originalHdr;
+            }
+        }
+
+#if COM3D25
+        private BloomEffect _renderTarget;
+        private System.Action<RenderTexture, RenderTexture> _render;
+#endif
+
         public override string effectName => "ブルーム";
 
         protected override BloomSetting setting
@@ -163,9 +219,10 @@ namespace COM3D25.PostEffects.Plugin
 
         public override void DrawContent(GUIView view)
         {
+            DrawSeparation(view, 2.1375f, 0.7f, 3.48f, 10f, "広がり");
             view.BeginHorizontal();
             {
-                view.DrawLabel("HDR", 60, 20);
+                view.DrawLabel(separation.enabled ? "共通 HDR" : "HDR", 60, 20);
                 _hdrComboBox.currentIndex = (int)setting.hdr;
                 _hdrComboBox.onSelected = (mode, _) => { setting.hdr = mode; SetDirty(); };
                 _hdrComboBox.DrawButton(view);

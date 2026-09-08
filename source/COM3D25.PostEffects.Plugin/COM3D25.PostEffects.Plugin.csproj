@@ -155,6 +155,7 @@
     <Compile Include="Effects\HeadMask.cs" />
     <Compile Include="Effects\AnalogGlitchEffect.cs" />
     <Compile Include="Effects\BloomController.cs" />
+    <Compile Include="Effects\SeparatedBloom.cs" />
     <Compile Include="Effects\BokehController.cs" />
     <Compile Include="Effects\BokehEffect.cs" />
     <Compile Include="Effects\IsolineController.cs" />

@@ -6,7 +6,7 @@ namespace COM3D25.PostEffects.Plugin
     /// ピラミッド状のダウン/アップサンプルで明部を滲ませるブルーム (Cinematic/Bloom)。
     /// 2.5 のゲームアセンブリに型が存在しないため、SceneCapture 同梱実装を自己完結な形で
     /// 移植したもの (シェーダーは cinematic バンドル)。
-    /// 移植元にあったメイドマスク (EffectMask 連携) は EffectMask 自体が未移植のため省いている
+    /// キャラ・背景の分離は SeparatedBloomEffect からマスク済み入力を受け取って行う
     /// </summary>
     public class CinematicBloomEffect : MonoBehaviour
     {
@@ -39,7 +39,13 @@ namespace COM3D25.PostEffects.Plugin
             }
         }
 
-        private void OnRenderImage(RenderTexture source, RenderTexture destination)
+        private void OnDestroy()
+        {
+            // 分離描画では無効なコンポーネントを手動で描画するため、破棄時にも解放する。
+            OnDisable();
+        }
+
+        public void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
             if (shader == null || !shader.isSupported)
             {
