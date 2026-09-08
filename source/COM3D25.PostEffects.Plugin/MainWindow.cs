@@ -37,7 +37,7 @@ namespace COM3D25.PostEffects.Plugin
 
         private int _modeIndex = 0;  // 0: エフェクト, 1: タイムライン, 2: プリセット
 
-        // タイムライン対応 5 系統。表示順は SceneEditor のポストエフェクトレイヤーの項目順に合わせる
+        // タイムライン対応 6 系統。表示順は SceneEditor のポストエフェクトレイヤーの項目順に合わせる
         private readonly List<EffectControllerBase> _timelineControllers = new List<EffectControllerBase>();
         private string _presetName = "";
 
@@ -214,7 +214,7 @@ namespace COM3D25.PostEffects.Plugin
         }
 
         /// <summary>
-        /// タイムライン対応 5 系統の集約ビュー。
+        /// タイムライン対応 6 系統の集約ビュー。
         /// SceneEditor のタイムラインが駆動する対象をまとめて確認・編集するためのタブで、
         /// 描画は既存の DrawEffectRow をそのまま使う (個別タブと同じ操作性)
         /// </summary>
@@ -249,6 +249,7 @@ namespace COM3D25.PostEffects.Plugin
             _timelineControllers.Add(manager.GetController<ParaffinController>());
             _timelineControllers.Add(manager.GetController<DistanceFogController>());
             _timelineControllers.Add(manager.GetController<RimlightController>());
+            _timelineControllers.Add(manager.GetController<BloomController>());
             // 登録前に呼ばれた場合に null を掴まないよう除去する
             _timelineControllers.RemoveAll(c => c == null);
         }

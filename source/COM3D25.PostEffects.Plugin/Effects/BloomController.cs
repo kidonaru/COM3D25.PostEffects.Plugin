@@ -13,6 +13,11 @@ namespace COM3D25.PostEffects.Plugin
 {
     public class BloomSetting
     {
+        // レンズフレアのブラー反復回数の許容範囲。内蔵ブルームは自前で丸めないため、
+        // GUI とタイムライン経由の書き込みの双方でここへ寄せる
+        public const int MIN_HOLLYWOOD_FLARE_BLUR_ITERATIONS = 0;
+        public const int MAX_HOLLYWOOD_FLARE_BLUR_ITERATIONS = 10;
+
         public BloomSeparationSetting separation = new BloomSeparationSetting
         {
             characterIntensity = 2.1375f,
@@ -383,8 +388,8 @@ namespace COM3D25.PostEffects.Plugin
                 labelWidth = 80,
                 width = -1,
                 fieldType = FloatFieldType.Int,
-                min = 0,
-                max = 10,
+                min = BloomSetting.MIN_HOLLYWOOD_FLARE_BLUR_ITERATIONS,
+                max = BloomSetting.MAX_HOLLYWOOD_FLARE_BLUR_ITERATIONS,
                 step = 1,
                 defaultValue = 2,
                 value = setting.hollywoodFlareBlurIterations,
