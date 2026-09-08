@@ -229,6 +229,7 @@
     <Compile Include="MTEUtils\ComboBoxPopupWindow.cs" />
     <Compile Include="MTEUtils\CurveData.cs" />
     <Compile Include="MTEUtils\CurveEditorWindow.cs" />
+    <Compile Include="MTEUtils\DialogPopupWindow.cs" />
     <Compile Include="MTEUtils\DockableWindowBase.cs" />
     <Compile Include="MTEUtils\DockingClient.cs" />
     <Compile Include="MTEUtils\EditorStateClient.cs" />
@@ -250,7 +251,9 @@
     <Compile Include="MTEUtils\ReflectionFieldCopier.cs" />
     <Compile Include="MTEUtils\ResizeCursor.cs" />
     <Compile Include="MTEUtils\TabBarDrawer.cs" />
+    <Compile Include="MTEUtils\TabBarLayout.cs" />
     <Compile Include="MTEUtils\TexturePickerWindow.cs" />
+    <Compile Include="MTEUtils\TooltipDrawer.cs" />
     <Compile Include="MTEUtils\TransformCache.cs" />
     <Compile Include="MTEUtils\WindowManagerBase.cs" />
     <Compile Include="MTEUtils\WindowResizeController.cs" />

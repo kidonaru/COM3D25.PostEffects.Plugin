@@ -281,6 +281,7 @@ namespace COM3D25.PostEffects.Plugin
         {
             MTEUtils.Log("プラグインが有効になりました");
             OnLoad();
+            managerRegistry.OnPluginEnable();
         }
 
         private void OnPluginDisable()

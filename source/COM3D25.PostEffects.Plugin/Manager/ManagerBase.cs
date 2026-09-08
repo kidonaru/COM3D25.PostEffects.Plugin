@@ -31,6 +31,10 @@ namespace COM3D25.PostEffects.Plugin
         {
         }
 
+        public virtual void OnPluginEnable()
+        {
+        }
+
         public virtual void OnPluginDisable()
         {
         }

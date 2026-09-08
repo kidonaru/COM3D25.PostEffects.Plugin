@@ -50,6 +50,9 @@ namespace COM3D25.PostEffects.Plugin
             // ComboBoxPopupWindow はホストの描画中に開閉が確定するため、
             // コンボボックスを持つウィンドウより後に登録すること (同フレームで描画させる)
             AddWindow(ComboBoxPopupWindow.instance);
+
+            // モーダルダイアログは常に最前面へ出すため最後に登録する
+            AddWindow(DialogPopupWindow.instance);
         }
 
         protected override void OnAfterUpdate()
