@@ -39,6 +39,10 @@ namespace COM3D25.PostEffects.Plugin
 
         // タイムライン対応 6 系統。表示順は SceneEditor のポストエフェクトレイヤーの項目順に合わせる
         private readonly List<EffectControllerBase> _timelineControllers = new List<EffectControllerBase>();
+
+        // タイムラインタブ内で表示中のエフェクト
+        private int _timelineTabIndex = 0;
+        private const float TIMELINE_TAB_WIDTH = 100f;
         private string _presetName = "";
 
         private GUIView _rootView = new GUIView();
@@ -214,28 +218,57 @@ namespace COM3D25.PostEffects.Plugin
         }
 
         /// <summary>
-        /// タイムライン対応 6 系統の集約ビュー。
-        /// SceneEditor のタイムラインが駆動する対象をまとめて確認・編集するためのタブで、
+        /// タイムライン対応 6 系統のビュー。
+        /// SceneEditor のタイムラインが駆動する対象をエフェクトごとのタブで切り替えて編集する。
         /// 描画は既存の DrawEffectRow をそのまま使う (個別タブと同じ操作性)
         /// </summary>
         private void DrawTimelineContent(GUIView view)
         {
-            view.DrawLabel("タイムライン対応エフェクト", -1, 20);
+            if (_timelineControllers.Count == 0)
+            {
+                InitTimelineControllers();
+            }
+            if (_timelineControllers.Count == 0)
+            {
+                return;
+            }
+
+            DrawTimelineTabs(view);
+
             view.DrawHorizontalLine(Color.gray);
             view.AddSpace(5);
 
+            var controller = _timelineControllers[Mathf.Clamp(_timelineTabIndex, 0, _timelineControllers.Count - 1)];
+
             view.BeginScrollView(-1, GetScrollHeight(view), GUIView.AutoScrollViewRect, false, true);
             {
-                if (_timelineControllers.Count == 0)
-                {
-                    InitTimelineControllers();
-                }
-                foreach (var controller in _timelineControllers)
-                {
-                    DrawEffectRow(view, controller);
-                }
+                DrawEffectRow(view, controller);
             }
             view.EndScrollView();
+        }
+
+        // エフェクト名のタブ行。幅が足りなければ次の行へ折り返す
+        private void DrawTimelineTabs(GUIView view)
+        {
+            view.BeginHorizontal();
+            {
+                for (var i = 0; i < _timelineControllers.Count; i++)
+                {
+                    if (view.currentPos.x + TIMELINE_TAB_WIDTH > view.viewRect.width)
+                    {
+                        view.EndLayout();
+                        view.BeginHorizontal();
+                    }
+
+                    var selected = i == _timelineTabIndex;
+                    if (view.DrawButton(_timelineControllers[i].effectName, TIMELINE_TAB_WIDTH, 20, true,
+                        selected ? GUIView.option.accentColor : Color.white))
+                    {
+                        _timelineTabIndex = i;
+                    }
+                }
+            }
+            view.EndLayout();
         }
 
         // コントローラ登録の完了後に確実に解決させるため、描画時に遅延で組み立てる。
