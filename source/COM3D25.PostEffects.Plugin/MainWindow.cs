@@ -46,6 +46,7 @@ namespace COM3D25.PostEffects.Plugin
 
         /// <summary>SceneEditor 側のポストエフェクトレイヤーのクラス名。TimelineLayerGateHost の文字列契約</summary>
         private const string POST_EFFECT_LAYER_NAME = "PostEffectTimelineLayer";
+
         private string _presetName = "";
 
         private GUIView _rootView = new GUIView();

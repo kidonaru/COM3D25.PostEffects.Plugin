@@ -12,7 +12,11 @@ namespace COM3D25.PostEffects.Plugin
     /// Begin で無効化したら同じ描画パス内で必ず End を呼ぶこと。
     /// SetEnabled はグローバル GUI.enabled を書き換えるため、戻し忘れると
     /// 後に描かれる ComboBoxPopupWindow まで操作できなくなる。
-    /// モード切替・タブのボタンはゲートの対象外にする (無効化すると抜けられなくなる)
+    /// モード切替・タブのボタンはゲートの対象外にする (無効化すると抜けられなくなる)。
+    ///
+    /// SceneEditor 側 TimelineLayerGate と異なり、メイド単位レイヤーの分岐や
+    /// drawNotice による注意文の重複抑制は持たない (対象レイヤーはメイド非依存かつ
+    /// 呼び出しが 1 箇所のみのため)
     /// </summary>
     public static class TimelineLayerGateDrawer
     {
