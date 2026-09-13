@@ -24,6 +24,20 @@ namespace COM3D25.PostEffects.Plugin
     {
         private static EffectSettings settings => EffectSettings.instance;
 
+        /// <summary>
+        /// メインウィンドウをタイムラインタブへ切り替える。
+        /// SceneEditor がタイムラインを読込・新規作成したタイミングで呼ばれる
+        /// </summary>
+        public static void ShowTimelineMode()
+        {
+            var window = WindowManager.instance.mainWindow;
+            if (window == null)
+            {
+                return;
+            }
+            window.ShowTimelineMode();
+        }
+
         // 各系統の上限。実体側のシェーダーバッファ上限と同値
         public static int GetMaxParaffinCount()
         {

@@ -36,6 +36,16 @@ namespace COM3D25.PostEffects.Plugin
         private static readonly string[] ModeNames = { "エフェクト", "タイムライン", "プリセット" };
 
         private int _modeIndex = 0;  // 0: エフェクト, 1: タイムライン, 2: プリセット
+        private const int MODE_TIMELINE = 1;
+
+        /// <summary>
+        /// タイムラインモードへ切り替える。SceneEditor がタイムラインを読み込んだときに
+        /// TimelineBridge 経由で呼ばれる。ウィンドウの開閉は変えず、タブだけを移す
+        /// </summary>
+        public void ShowTimelineMode()
+        {
+            _modeIndex = MODE_TIMELINE;
+        }
 
         // タイムライン対応 6 系統。表示順は SceneEditor のポストエフェクトレイヤーの項目順に合わせる
         private readonly List<EffectControllerBase> _timelineControllers = new List<EffectControllerBase>();
