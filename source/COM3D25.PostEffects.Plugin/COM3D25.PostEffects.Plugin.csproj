@@ -264,6 +264,7 @@
     <Compile Include="EffectSettings.cs" />
     <Compile Include="TimelineBridge.cs" />
     <Compile Include="MainWindow.cs" />
+    <Compile Include="TimelineLayerGateDrawer.cs" />
     <Compile Include="PluginInfo.cs" />
     <Compile Include="PluginResources.cs" />
     <Compile Include="PostEffectsPreset.cs" />

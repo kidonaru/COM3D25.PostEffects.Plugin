@@ -43,6 +43,9 @@ namespace COM3D25.PostEffects.Plugin
         // タイムラインタブ内で表示中のエフェクト
         private int _timelineTabIndex = 0;
         private const float TIMELINE_TAB_WIDTH = 100f;
+
+        /// <summary>SceneEditor 側のポストエフェクトレイヤーのクラス名。TimelineLayerGateHost の文字列契約</summary>
+        private const string POST_EFFECT_LAYER_NAME = "PostEffectTimelineLayer";
         private string _presetName = "";
 
         private GUIView _rootView = new GUIView();
@@ -131,7 +134,15 @@ namespace COM3D25.PostEffects.Plugin
         {
             _rootView.ResetLayout();
 
-            DrawModeContent();
+            try
+            {
+                DrawModeContent();
+            }
+            finally
+            {
+                // レイヤーゲートで強制無効にした状態を、早期 return や例外に関わらずここで必ず解く
+                TimelineLayerGateDrawer.End(_contentView);
+            }
 
             // ボタン押下で _rootView に登録されたフォーカスをポップアップへ引き渡す
             ComboBoxPopupWindow.instance.ProcessFocus(_rootView, this);
@@ -237,6 +248,10 @@ namespace COM3D25.PostEffects.Plugin
 
             view.DrawHorizontalLine(Color.gray);
             view.AddSpace(5);
+
+            // エフェクトタブの後に置き、タブ切替は無効化しない。
+            // レイヤー名は SceneEditor 側 PostEffectTimelineLayer のクラス名 (文字列契約)
+            TimelineLayerGateDrawer.Begin(view, POST_EFFECT_LAYER_NAME, 20f);
 
             var controller = _timelineControllers[Mathf.Clamp(_timelineTabIndex, 0, _timelineControllers.Count - 1)];
 
