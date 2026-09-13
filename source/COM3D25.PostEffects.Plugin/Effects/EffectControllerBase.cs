@@ -57,6 +57,46 @@ namespace COM3D25.PostEffects.Plugin
             settings.dirty = true;
         }
 
+        // データ番号タブ 1 個分の幅。最大 4 件 + 追加/削除ボタンが 1 行に収まる幅にしている
+        private const float DATA_TAB_WIDTH = 30f;
+
+        // 複数データを持つエフェクト共通の、データ番号のタブ行 (番号タブ + 追加/削除)。
+        // 編集対象のデータ番号は呼び出し側が持つため ref で受けて書き換える
+        protected static void DrawDataTabs<T>(GUIView view, PostEffectSettingsBase<T> s,
+            ref int dataIndex, int maxCount, Func<T> createData)
+            where T : class, IPostEffectData
+        {
+            var count = s.GetDataCount();
+
+            view.BeginHorizontal();
+            {
+                view.DrawLabel("データ", 50, 20);
+
+                for (var i = 0; i < count; i++)
+                {
+                    var selected = i == dataIndex;
+                    if (view.DrawButton((i + 1).ToString(), DATA_TAB_WIDTH, 20, true,
+                        selected ? GUIView.option.accentColor : (Color?)null))
+                    {
+                        dataIndex = i;
+                    }
+                }
+
+                if (view.DrawButton("追加", 60, 20, count < maxCount))
+                {
+                    s.AddData(createData());
+                    dataIndex = s.GetDataCount() - 1;
+                    SetDirty();
+                }
+                if (view.DrawButton("削除", 60, 20, count > 0))
+                {
+                    s.RemoveData(dataIndex);
+                    SetDirty();
+                }
+            }
+            view.EndLayout();
+        }
+
         // エフェクトの設定項目はほぼ同じ体裁のスライダーなので、その定型をまとめたもの
         protected void DrawSlider(GUIView view, string label, float min, float max, float defaultValue,
             float value, Action<float> onChanged, float step = 0.01f)

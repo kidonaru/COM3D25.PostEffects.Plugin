@@ -72,30 +72,8 @@ namespace COM3D25.PostEffects.Plugin
         {
             var s = setting;
 
-            view.BeginHorizontal();
-            {
-                view.DrawLabel(string.Format("データ {0}/{1}", s.GetDataCount() == 0 ? 0 : _dataIndex + 1, s.GetDataCount()), 100, 20);
-                if (view.DrawButton("追加", 60, 20, s.GetDataCount() < RimlightEffectModel.MAX_RIMLIGHT_COUNT))
-                {
-                    s.AddData(new RimlightData { enabled = true });
-                    _dataIndex = s.GetDataCount() - 1;
-                    SetDirty();
-                }
-                if (view.DrawButton("削除", 60, 20, s.GetDataCount() > 0))
-                {
-                    s.RemoveData(_dataIndex);
-                    SetDirty();
-                }
-                if (view.DrawButton("<", 25, 20, _dataIndex > 0))
-                {
-                    --_dataIndex;
-                }
-                if (view.DrawButton(">", 25, 20, _dataIndex < s.GetDataCount() - 1))
-                {
-                    ++_dataIndex;
-                }
-            }
-            view.EndLayout();
+            DrawDataTabs(view, s, ref _dataIndex, RimlightEffectModel.MAX_RIMLIGHT_COUNT,
+                () => new RimlightData { enabled = true });
 
             if (s.GetDataCount() == 0)
             {
