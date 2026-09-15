@@ -24,6 +24,15 @@ namespace COM3D25.PostEffects.Plugin
         protected abstract void RenderBloom(TComponent component, RenderTexture source, RenderTexture destination);
         private SeparatedBloomEffect _separatedEffect;
 
+        public override void Prepare()
+        {
+            base.Prepare();
+            if (_component != null)
+            {
+                EnsureSeparatedEffect(_component);
+            }
+        }
+
         public override void Apply()
         {
             if (!separation.enabled)
@@ -36,12 +45,19 @@ namespace COM3D25.PostEffects.Plugin
             var component = GetOrAddComponent();
             if (component == null) return;
             component.enabled = false;
+            EnsureSeparatedEffect(component).enabled = true;
+        }
+
+        // 分離描画用コンポーネントは本体の直後に並ぶよう、本体追加と同じタイミングで無効状態で追加する
+        private SeparatedBloomEffect EnsureSeparatedEffect(TComponent component)
+        {
             if (_separatedEffect == null)
             {
                 _separatedEffect = component.gameObject.AddComponent<SeparatedBloomEffect>();
                 _separatedEffect.renderRegion = RenderRegion;
+                _separatedEffect.enabled = false;
             }
-            _separatedEffect.enabled = true;
+            return _separatedEffect;
         }
 
         private void RenderRegion(RenderTexture source, RenderTexture destination, bool character)

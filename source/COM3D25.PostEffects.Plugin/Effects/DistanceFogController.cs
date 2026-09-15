@@ -34,6 +34,16 @@ namespace COM3D25.PostEffects.Plugin
         // GUI で編集対象にしているデータ番号
         private int _dataIndex = 0;
 
+        public override void Prepare()
+        {
+            // CommandBuffer 方式のため OnRenderImage の並びとは無関係だが、Hub 自体は先に用意しておく
+            var hub = PostEffectHub.GetOrAdd(cameraObject);
+            if (hub != null)
+            {
+                hub.enabled = false;
+            }
+        }
+
         public override void Apply()
         {
             var hub = PostEffectHub.GetOrAdd(cameraObject);
