@@ -80,7 +80,7 @@ namespace COM3D25.PostEffects.Plugin
                 _drawCount = 0;
                 foreach (var renderer in _renderers)
                 {
-                    if (renderer == null || !renderer.enabled || renderer.forceRenderingOff ||
+                    if (renderer == null || !renderer.enabled || IsRenderingOff(renderer) ||
                         renderer.shadowCastingMode == ShadowCastingMode.ShadowsOnly ||
                         !renderer.gameObject.activeInHierarchy ||
                         renderer.gameObject.layer != _characterLayer ||
@@ -110,6 +110,17 @@ namespace COM3D25.PostEffects.Plugin
                     _reportedFailure = true;
                 }
             }
+        }
+
+        // Renderer.forceRenderingOff は Unity 2019.3 以降。COM3D2 (2.0) の Unity 5.6 には
+        // プロパティも設定側の API も無いため、常に描画対象として扱う
+        private static bool IsRenderingOff(Renderer renderer)
+        {
+#if COM3D25
+            return renderer.forceRenderingOff;
+#else
+            return false;
+#endif
         }
 
         private static bool SupportsOutline(Material material)

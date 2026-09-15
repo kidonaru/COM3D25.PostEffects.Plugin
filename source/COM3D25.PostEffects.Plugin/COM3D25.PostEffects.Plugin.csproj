@@ -194,8 +194,8 @@
     <Compile Include="Effects\CreaseController.cs" />
     <Compile Include="Effects\EdgeDetectController.cs" />
     <Compile Include="Effects\EdgeDetectEffect.cs" />
-    <Compile Include="Effects\OutlineColorEffect.cs" Condition=" '$(GameVersion)' == 'COM3D25' " />
-    <Compile Include="Effects\OutlineColorController.cs" Condition=" '$(GameVersion)' == 'COM3D25' " />
+    <Compile Include="Effects\OutlineColorEffect.cs" />
+    <Compile Include="Effects\OutlineColorController.cs" />
     <Compile Include="Effects\SunShaftsController.cs" />
     <Compile Include="Effects\TiltShiftHdrController.cs" />
     <Compile Include="Effects\EffectShaders.cs" />

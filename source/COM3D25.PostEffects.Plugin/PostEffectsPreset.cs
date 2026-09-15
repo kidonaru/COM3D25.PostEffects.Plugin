@@ -40,9 +40,7 @@ namespace COM3D25.PostEffects.Plugin
         public IsolineSetting isoline = new IsolineSetting();
         public ObscuranceSetting obscurance = new ObscuranceSetting();
         public EdgeDetectSetting edgeDetect = new EdgeDetectSetting();
-#if COM3D25
         public OutlineColorSetting outlineColor = new OutlineColorSetting();
-#endif
         public CreaseSetting crease = new CreaseSetting();
         public SunShaftsSetting sunShafts = new SunShaftsSetting();
         public TiltShiftHdrSetting tiltShiftHdr = new TiltShiftHdrSetting();
