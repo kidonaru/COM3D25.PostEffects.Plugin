@@ -38,10 +38,23 @@
         public virtual void Prepare() { }
 ```
 
-- [ ] **Step 2: `cameraObject` を `internal static` にする**
+- [ ] **Step 2: `cameraObject` を `internal static` にし、`GameMain.Instance` の null を吸収する**
+
+プラグインの `Start()` 時点では `GameMain` が未生成の可能性があり、そのまま `PrepareAll()` が例外を投げると
+`Initialize()` の残り（ウィンドウ登録・ギアメニュー・SceneEditor 連携）が丸ごと飛ぶため、ここで null を返す:
 
 ```csharp
+        // PostEffectManager.PrepareAll からも参照するため internal。外部連携には公開しない
         internal static GameObject cameraObject
+        {
+            get
+            {
+                // プラグインの Start 時点では GameMain 自体が未生成のことがある
+                var gameMain = GameMain.Instance;
+                var mainCamera = gameMain != null ? gameMain.MainCamera : null;
+                return mainCamera != null ? mainCamera.gameObject : null;
+            }
+        }
 ```
 
 - [ ] **Step 3: 汎用基底に既定実装を追加**
@@ -263,6 +276,12 @@ git commit -m "feat(effect): 分離ブルームと Hub 系コントローラに 
                 }
             }
 
+            // AddComponent 直後に各 Effect の OnEnable が走り、depthTextureMode |= Depth が
+            // 無効化後も残る (OnDisable で戻す実装がない)。無効なエフェクトの深度パスを
+            // 常駐させないため、追加前の値へ戻す
+            var unityCamera = camera.GetComponent<Camera>();
+            var depthMode = unityCamera != null ? unityCamera.depthTextureMode : DepthTextureMode.None;
+
             foreach (var controller in ordered)
             {
                 try
@@ -276,9 +295,15 @@ git commit -m "feat(effect): 分離ブルームと Hub 系コントローラに 
                 }
             }
 
+            if (unityCamera != null)
+            {
+                unityCamera.depthTextureMode = depthMode;
+            }
             _preparedCamera = camera;
         }
 ```
+
+補足: Hub 系の `Prepare()` は `GetOrAdd` → `OnEnable`（マテリアル・CommandBuffer 生成）→ `enabled=false` → `OnDisable`（`Dispose` で ComputeBuffer 解放）が同フレームに走るが、各モデルの `OnPreRender` が `_computeBuffer == null` なら再生成する実装のため無害（`ColorParaffinEffectModel.cs:106` 等で確認済み）。
 
 - [ ] **Step 3: `LateUpdate()` 冒頭でカメラ差し替えを検知**
 
@@ -365,3 +390,18 @@ Expected: ゲーム側既存コンポーネントの後に、spec の追加順�
 - [ ] **Step 4: シーン遷移後の再構築を確認**
 
 エディットからタイトルなど別シーンへ遷移し、Step 2 を再実行して並びが維持されることを確認する。
+
+- [ ] **Step 5: 深度パスが残っていないことを確認**
+
+全エフェクト OFF の状態で `eval_csharp`:
+
+```csharp
+GameMain.Instance.MainCamera.GetComponent<UnityEngine.Camera>().depthTextureMode.ToString()
+```
+
+Expected: プラグイン導入前と同じ値（Prepare 前の値。`Depth` が立ちっぱなしになっていない）。
+
+## レビュー却下メモ
+
+- LateUpdate のカメラ差し替え検知を try-catch で囲む — `cameraObject` の null ガードと `PrepareAll` 内のコントローラ別 try-catch で例外経路が塞がるため不要
+- 全 32 Effect クラスの OnEnable 精査 — grep で OnEnable を持つ 11 クラスを確認済み。副作用は depthTextureMode の |= のみで、PrepareAll の退避/復元で吸収する
