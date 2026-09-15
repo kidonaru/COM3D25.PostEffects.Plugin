@@ -129,6 +129,7 @@
     <Compile Include="Effects\DiffusionEffect.cs" />
     <Compile Include="Effects\CasSharpenController.cs" />
     <Compile Include="Effects\CasSharpenEffect.cs" />
+    <Compile Include="Effects\VignettingEffect.cs" />
     <Compile Include="Effects\HalftoneController.cs" />
     <Compile Include="Effects\HalftoneEffect.cs" />
     <Compile Include="Effects\WhiteBalanceController.cs" />

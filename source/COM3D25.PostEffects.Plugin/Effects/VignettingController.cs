@@ -1,12 +1,13 @@
 using COM3D2.MotionTimelineEditor;
 using UnityEngine;
-// Assembly-UnityScript-firstpass のグローバル名前空間にも旧 Vignetting が残骸として存在するため、
+// ゲーム標準のビネットコンポーネント。自前の VignettingEffect が有効な間はこちらを無効化する。
+// なお Assembly-UnityScript-firstpass のグローバル名前空間にも旧 Vignetting が残骸として存在するため、
 // ゲームが実際に使う PostEffects_Dummy 側へエイリアスで束縛する
 #if COM3D25
-using VignettingEffect = PostEffects_Dummy.Vignetting;
+using GameVignetting = PostEffects_Dummy.Vignetting;
 #else
 // COM3D2 (2.0) の内蔵エフェクトはグローバル名前空間 (Assembly-UnityScript-firstpass) にある
-using VignettingEffect = global::Vignetting;
+using GameVignetting = global::Vignetting;
 #endif
 
 namespace COM3D25.PostEffects.Plugin
@@ -27,6 +28,11 @@ namespace COM3D25.PostEffects.Plugin
         public float blurDistance = 1.71f;
     }
 
+    /// <summary>
+    /// ビネット。処理は自前の VignettingEffect で行い、ゲーム標準の Vignetting は
+    /// 有効中に二重掛けにならないよう毎フレーム無効化する (ゲーム側が毎フレーム有効化し直すため)。
+    /// 状態管理は 2 系統ある: 基底の _captured* は自前コンポーネント用、_game* はゲーム標準コンポーネント用
+    /// </summary>
     public class VignettingController : EffectControllerBase<VignettingEffect, VignettingSetting>
     {
         public override string effectName => "ビネット";
@@ -51,8 +57,76 @@ namespace COM3D25.PostEffects.Plugin
             set => setting.gameEffectDisabled = value;
         }
 
+        // ゲーム標準コンポーネントと、最初に触れた時点の有効状態 (Restore で戻す値)。
+        // 無効化の経路は Apply (自前エフェクト有効中) と SuppressGameEffect (標準エフェクト無効化) の
+        // 2 つあるため、どちらから入っても初回だけ捕捉するよう SuppressGame に集約している
+        private GameVignetting _gameComponent;
+        private bool _gameCaptured;
+        private bool _gameCapturedEnabled;
+
+        private GameVignetting gameComponent
+        {
+            get
+            {
+                // シーン遷移等で破棄されたら取得し直す (捕捉値は最初の取得時のものを保持し続ける)
+                if (_gameComponent == null)
+                {
+                    var go = cameraObject;
+                    _gameComponent = go != null ? go.GetComponent<GameVignetting>() : null;
+                }
+                return _gameComponent;
+            }
+        }
+
+        private void SuppressGame()
+        {
+            var component = gameComponent;
+            if (component == null)
+            {
+                return;
+            }
+            if (!_gameCaptured)
+            {
+                _gameCapturedEnabled = component.enabled;
+                _gameCaptured = true;
+            }
+            component.enabled = false;
+        }
+
+        public override void SuppressGameEffect()
+        {
+            SuppressGame();
+        }
+
+        public override void Apply()
+        {
+            SuppressGame();
+            base.Apply();
+        }
+
+        public override void Restore()
+        {
+            base.Restore();
+            var component = gameComponent;
+            if (component != null && _gameCaptured)
+            {
+                component.enabled = _gameCapturedEnabled;
+            }
+        }
+
         protected override void ApplySetting(VignettingEffect component)
         {
+            // ゲームが読み込み済みの標準シェーダーを流用する。Shader.Find で取れない環境では
+            // ゲーム標準コンポーネントが持つ参照から取る (揃うまで毎フレーム再試行する)
+            if (component.vignetteShader == null || component.separableBlurShader == null
+                || component.chromAberrationShader == null)
+            {
+                var game = gameComponent;
+                component.vignetteShader = Shader.Find("Hidden/Vignetting") ?? game?.vignetteShader;
+                component.separableBlurShader = Shader.Find("Hidden/SeparableBlur") ?? game?.separableBlurShader;
+                component.chromAberrationShader = Shader.Find("Hidden/ChromaticAberration") ?? game?.chromAberrationShader;
+            }
+
             component.mode = setting.mode;
             component.intensity = setting.intensity;
             component.blur = setting.blur;
