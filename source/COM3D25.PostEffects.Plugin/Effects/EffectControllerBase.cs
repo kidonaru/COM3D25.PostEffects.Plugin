@@ -29,6 +29,11 @@ namespace COM3D25.PostEffects.Plugin
         // gameEffectDisabled が立っている間は毎フレーム LateUpdate から呼んで無効化で対抗する
         public virtual void SuppressGameEffect() { }
 
+        // プラグイン有効化時 (とカメラ差し替え時) に PostEffectManager から固定順で呼ばれ、
+        // コンポーネントを無効状態でカメラへ追加する。OnRenderImage の実行順はカメラ上の
+        // コンポーネント順で決まるため、有効化した順ではなくここで並びを確定させる
+        public virtual void Prepare() { }
+
         // 有効中は毎フレーム LateUpdate から呼ばれ、設定値をカメラのコンポーネントへ書き込む。
         // ゲーム本体 (CameraMain.Update 等) が毎フレーム値を上書きするエフェクトがあるため、
         // 一度だけの適用ではなく毎フレーム書き込みで対抗する
@@ -43,11 +48,14 @@ namespace COM3D25.PostEffects.Plugin
         // メインウィンドウのタブ内容を描画する
         public abstract void DrawContent(GUIView view);
 
-        protected static GameObject cameraObject
+        // PostEffectManager.PrepareAll からも参照するため internal。外部連携には公開しない
+        internal static GameObject cameraObject
         {
             get
             {
-                var mainCamera = GameMain.Instance.MainCamera;
+                // プラグインの Start 時点では GameMain 自体が未生成のことがある
+                var gameMain = GameMain.Instance;
+                var mainCamera = gameMain != null ? gameMain.MainCamera : null;
                 return mainCamera != null ? mainCamera.gameObject : null;
             }
         }
@@ -150,6 +158,16 @@ namespace COM3D25.PostEffects.Plugin
             _wasAdded = true;
             _captured = true;
             return _component;
+        }
+
+        public override void Prepare()
+        {
+            var component = GetOrAddComponent();
+            // ゲーム標準の既存コンポーネントは取得時の状態を保つ (無効化は Apply/Suppress の責務)
+            if (component != null && _wasAdded)
+            {
+                component.enabled = false;
+            }
         }
 
         public override void SuppressGameEffect()
