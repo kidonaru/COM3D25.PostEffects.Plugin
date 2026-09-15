@@ -15,6 +15,9 @@ Shader "Hidden/PostEffects/Kuwahara"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            // _Radius による可変長ループは d3d9 (SM3) で展開に失敗する。
+            // COM3D2 / COM3D2.5 とも d3d11 で動くため d3d9 は対象外にする
+            #pragma exclude_renderers d3d9
             #include "UnityCG.cginc"
 
             sampler2D _MainTex;

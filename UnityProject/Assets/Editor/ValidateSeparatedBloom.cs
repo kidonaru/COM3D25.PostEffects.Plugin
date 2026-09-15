@@ -17,7 +17,7 @@ public static class ValidateSeparatedBloom
         catch (Exception e)
         {
             Debug.LogError("ブルーム分離検証に失敗しました: " + e);
-            if (Application.isBatchMode) EditorApplication.Exit(1);
+            if (UnityEditorInternal.InternalEditorUtility.inBatchMode) EditorApplication.Exit(1);
             else throw;
         }
     }

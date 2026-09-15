@@ -86,14 +86,10 @@ if !ERRORLEVEL! neq 0 (
     exit /b 1
 )
 
-rem シェーダーバンドルのデプロイ (共通の Config を入れた後、2.5 用 posteffects で上書きする)
+rem シェーダーバンドルのデプロイ (Config\PostEffects は 2.0 / 2.5 共通。posteffects も Unity 5.6 ビルドの 1 本を共用する)
 xcopy /y /e /i /q "%REPO_DIR%\UnityInjector\Config\PostEffects" "%COM3D25_DIR%\Sybaris\UnityInjector\Config\PostEffects" >nul
 if !ERRORLEVEL! neq 0 (
     echo 警告: シェーダーバンドルのデプロイに失敗しました
-)
-xcopy /y /e /i /q "%REPO_DIR%\UnityInjector (COM3D2.5)\Config\PostEffects" "%COM3D25_DIR%\Sybaris\UnityInjector\Config\PostEffects" >nul
-if !ERRORLEVEL! neq 0 (
-    echo 警告: COM3D2.5 用シェーダーバンドルのデプロイに失敗しました
 )
 
 rem ゲームへのデプロイ ※ゲーム起動中はロックされるため失敗しても続行
@@ -130,7 +126,7 @@ if !ERRORLEVEL! neq 0 (
 )
 
 rem リリースパッケージ用に リポジトリ内 UnityInjector へコピー
-rem (UnityInjector は COM3D2 (2.0) 用。共通 Config と 2.0 用 posteffects もここで管理する)
+rem (UnityInjector は COM3D2 (2.0) 用。両バージョン共通の Config もここで管理する)
 if not exist "%REPO_DIR%\UnityInjector" mkdir "%REPO_DIR%\UnityInjector"
 copy /y %OUT_DIR%\%DLL_NAME% "%REPO_DIR%\UnityInjector\"
 if !ERRORLEVEL! neq 0 (
@@ -138,7 +134,7 @@ if !ERRORLEVEL! neq 0 (
     exit /b 1
 )
 
-rem シェーダーバンドルのデプロイ (UnityInjector の Config は 2.0 用 posteffects 込みなのでそのままコピー)
+rem シェーダーバンドルのデプロイ (Config\PostEffects は 2.0 / 2.5 共通)
 xcopy /y /e /i /q "%REPO_DIR%\UnityInjector\Config\PostEffects" "%COM3D2_DIR%\Sybaris\UnityInjector\Config\PostEffects" >nul
 if !ERRORLEVEL! neq 0 (
     echo 警告: シェーダーバンドルのデプロイに失敗しました

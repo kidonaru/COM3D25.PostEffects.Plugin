@@ -29,8 +29,8 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
-rem COM3D2.5 版は共通 Config を丸ごとコピーしたうえで、dll と posteffects を 2.5 用に上書きする
-rem (dll は両バージョン同名のため、上書きコピーだけで差し替えが完了する)
+rem COM3D2.5 版は共通 Config を丸ごとコピーしたうえで、dll だけ 2.5 用に上書きする
+rem (dll は両バージョン同名のため、上書きコピーだけで差し替えが完了する。シェーダーバンドルは両バージョン共通)
 xcopy UnityInjector "output\%PLUGIN_NAME%\UnityInjector (COM3D2.5)" /E /I
 if %ERRORLEVEL% neq 0 (
     echo COM3D2.5 版のコピーに失敗しました

@@ -21,7 +21,7 @@
 3. リポジトリルートの `debug.bat` を実行（Debug ビルド + ゲームへのデプロイ）
    - Release ビルドは `source\COM3D25.PostEffects.Plugin\build.bat release`
 
-ビルド成果物はリポジトリルートの `UnityInjector\`（COM3D2 (2.0) 用。共通の `Config\PostEffects` もここで管理）と `UnityInjector (COM3D2.5)\`（COM3D2.5 用の dll と posteffects バンドル差分）に集約され、そのままリリースパッケージのレイアウトになる。ビルドスクリプトは同時に各ゲームの `Sybaris\UnityInjector\` へ DLL とシェーダーバンドル（`Config\PostEffects`）をデプロイする（ゲーム起動中は DLL コピーが失敗するが続行される）。
+ビルド成果物はリポジトリルートの `UnityInjector\`（COM3D2 (2.0) 用。両バージョン共通の `Config\PostEffects` もここで管理）と `UnityInjector (COM3D2.5)\`（COM3D2.5 用の dll）に集約され、そのままリリースパッケージのレイアウトになる。ビルドスクリプトは同時に各ゲームの `Sybaris\UnityInjector\` へ DLL とシェーダーバンドル（`Config\PostEffects`）をデプロイする（ゲーム起動中は DLL コピーが失敗するが続行される）。
 
 ## 補足
 
@@ -30,11 +30,14 @@
 
 ## シェーダーバンドルのビルド
 
-自前シェーダー（`UnityProject\Assets\Shaders`）は Unity 2022.3 プロジェクト `UnityProject\` でビルドする。
+自前シェーダー（`UnityProject\Assets\Shaders`）は Unity 5.6.4f1 プロジェクト `UnityProject\` でビルドする（MotionTimelineEditor と同じ構成）。
+Unity 5.6 でビルドしたバンドルは COM3D2 (2.0) と COM3D2.5 (Unity 2022.3) の両方で読めるため、1 本を両バージョン共通で配布する（2022.3 ビルドのバンドルは Unity 5.6 では読み込めないので逆は不可）。
 
-- エディタスクリプト: `UnityProject\Assets\Editor\BuildShaderBundles.cs`
-- 出力先: `UnityInjector (COM3D2.5)\Config\PostEffects\Shaders\`（リポジトリに同梱してコミットする）
-- COM3D2 (2.0) 用の posteffects バンドルは Unity 5.6 でビルドしたものを `UnityInjector\Config\PostEffects\Shaders\` に置く（2022.3 ビルドのバンドルは Unity 5.6 では読み込めない）
-- Unity エディタから、または batchmode で実行できる
+- リポジトリルートの `build-bundle.bat` を実行する（batchmode で `BuildShaderBundles.Build` を呼び、成果物を配布フォルダへコピーする）
+  - Unity の場所は既定で `C:\Program Files\Unity\Hub\Editor\5.6.4f1\Editor\Unity.exe`。別の場所なら環境変数 `UNITY56_EXE` で指定する
+  - ログは `bundle_build.log` に出る。シェーダーのコンパイルエラーがあるとビルドは失敗扱いになる
+- エディタスクリプト: `UnityProject\Assets\Editor\BuildShaderBundles.cs`（Unity エディタのメニュー `PostEffects/Build Shader Bundles` からも実行できる）
+- 出力先: `UnityInjector\Config\PostEffects\Shaders\posteffects`（リポジトリに同梱してコミットする）
+- 可変長ループを含むシェーダーは d3d9 で展開に失敗するため `#pragma exclude_renderers d3d9` を付ける（両ゲームとも d3d11 で動く）
 
 同梱シェーダーのライセンス表記は `UnityInjector\Config\PostEffects\License` にまとめている。シェーダーを追加した場合はここにも追記すること。
