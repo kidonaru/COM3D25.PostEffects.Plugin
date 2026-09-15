@@ -36,8 +36,8 @@
 - Unity 2022.3.62f2 の GPU 描画で HDR抽出、マスク相補性、無効時の元画像復元、
   色・アルファ保持、輪郭外の光の保持、背景遮蔽を検証。
 - COM3D2.5 用の `posteffects` バンドルを更新。
-- Unity 5.6.4f1 はライセンス未認証のため、2.0用バンドルの生成とGPU検証は未実施。
-  2.0版で分離を使用するには、認証済みUnity 5.6で同じシェーダーをビルドする必要がある。
+- 2026-09-16 に `posteffects` バンドルを Unity 5.6.4f1 の1本へ共通化し、`SeparatedBloom.shader` も
+  2.0へ同梱済み。C#側にバージョンガードは無いため2.0でも動作する想定だが、2.0実機でのGPU検証は未実施。
 - COM3D2.5の実機で、背景ブルームの切替とHDR判定による変色をMCP経由で検証（下記）。
 
 GPU検証は `UnityProject` を開き、`PostEffects > Validate Separated Bloom` を実行する。
