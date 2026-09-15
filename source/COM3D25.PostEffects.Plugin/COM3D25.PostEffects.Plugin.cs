@@ -202,6 +202,8 @@ namespace COM3D25.PostEffects.Plugin
 
                 // PostEffectManager はウィンドウ非表示中も動かすため registry には登録しない
                 postEffectManager.Init();
+                // カメラ未生成ならここでは何もせず、LateUpdate のカメラ検知で組み直される
+                postEffectManager.PrepareAll();
 
                 managerRegistry.RegisterManager(WindowManager.instance);
                 managerRegistry.RegisterManager(ConfigManager.instance);
