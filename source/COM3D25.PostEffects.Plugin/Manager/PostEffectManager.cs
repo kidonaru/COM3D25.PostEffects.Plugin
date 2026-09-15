@@ -217,23 +217,29 @@ namespace COM3D25.PostEffects.Plugin
             var unityCamera = camera.GetComponent<Camera>();
             var depthMode = unityCamera != null ? unityCamera.depthTextureMode : DepthTextureMode.None;
 
-            foreach (var controller in ordered)
+            try
             {
-                try
+                foreach (var controller in ordered)
                 {
-                    controller.Prepare();
+                    try
+                    {
+                        controller.Prepare();
+                    }
+                    catch (Exception e)
+                    {
+                        MTEUtils.LogException(e);
+                        MTEUtils.LogError("エフェクトの事前追加に失敗しました: {0}", controller.effectName);
+                    }
                 }
-                catch (Exception e)
+            }
+            finally
+            {
+                if (unityCamera != null)
                 {
-                    MTEUtils.LogException(e);
-                    MTEUtils.LogError("エフェクトの事前追加に失敗しました: {0}", controller.effectName);
+                    unityCamera.depthTextureMode = depthMode;
                 }
             }
 
-            if (unityCamera != null)
-            {
-                unityCamera.depthTextureMode = depthMode;
-            }
             _preparedCamera = camera;
         }
 
