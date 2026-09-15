@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using COM3D2.MotionTimelineEditor;
+using UnityEngine;
 
 namespace COM3D25.PostEffects.Plugin
 {
@@ -35,6 +36,62 @@ namespace COM3D25.PostEffects.Plugin
         // ID → コントローラの索引。外部連携 (MTE 等) のセーブデータキーにも使う
         private Dictionary<string, EffectControllerBase> _controllerById =
             new Dictionary<string, EffectControllerBase>();
+
+        // カメラへのコンポーネント追加順 = OnRenderImage の実行順。SceneCapture の EffectManager.Clear() 順を
+        // 骨格に、本プラグイン独自のエフェクトを用途の近い位置へ挿入している。
+        // ここに無い ID (Hub 系 / LightShafts / GameEffect) はカメラ上の並びに関係しないため先頭で処理する
+        private static readonly string[] ComponentOrder =
+        {
+            nameof(EffectSettings.maidHide),
+            nameof(EffectSettings.colorCorrectionCurves),
+            nameof(EffectSettings.contrast),
+            nameof(EffectSettings.crease),
+            nameof(EffectSettings.edgeDetect),
+#if COM3D25
+            nameof(EffectSettings.outlineColor),
+#endif
+            nameof(EffectSettings.filmicMedianFilter),
+            nameof(EffectSettings.antialiasing),
+            nameof(EffectSettings.noiseAndGrain),
+            nameof(EffectSettings.motionBlur),
+            nameof(EffectSettings.tiltShiftHdr),
+            nameof(EffectSettings.sunShafts),
+            nameof(EffectSettings.analogGlitch),
+            nameof(EffectSettings.digitalGlitch),
+            nameof(EffectSettings.isoline),
+            nameof(EffectSettings.halftone),
+            nameof(EffectSettings.kuwahara),
+            nameof(EffectSettings.obscurance),
+            nameof(EffectSettings.globalFog),
+            nameof(EffectSettings.stylisticFog),
+            nameof(EffectSettings.cinematicBloom),
+            nameof(EffectSettings.filmicBloom),
+            nameof(EffectSettings.streak),
+            nameof(EffectSettings.bloom),
+            nameof(EffectSettings.diffusion),
+            nameof(EffectSettings.depthOfField),
+            nameof(EffectSettings.cinematicDepthOfField),
+            nameof(EffectSettings.bokeh),
+            nameof(EffectSettings.filmicBokeh),
+            nameof(EffectSettings.blur),
+            nameof(EffectSettings.radialBlur),
+            nameof(EffectSettings.ramp),
+            nameof(EffectSettings.cinematicLensAberrations),
+            nameof(EffectSettings.fisheye),
+            nameof(EffectSettings.vignetting),
+            nameof(EffectSettings.colorCorrectionLut),
+            nameof(EffectSettings.tonemappingColorGrading),
+            nameof(EffectSettings.whiteBalance),
+            nameof(EffectSettings.gtToneMap),
+            nameof(EffectSettings.sepia),
+            nameof(EffectSettings.grayscale),
+            nameof(EffectSettings.casSharpen),
+            nameof(EffectSettings.filmicLetterBox),
+            nameof(EffectSettings.screenOverlay),
+        };
+
+        // 最後に PrepareAll したカメラ。シーン遷移等で差し替わったら組み直す
+        private GameObject _preparedCamera;
 
         // 登録順がそのまま UI の表示順になるためカテゴリごとにまとめる
         public override void Init()
@@ -126,9 +183,69 @@ namespace COM3D25.PostEffects.Plugin
             return null;
         }
 
+        // 全コントローラのコンポーネントを固定順で無効状態のまま追加する。
+        // 有効化した順で AddComponent すると OnRenderImage の順序が操作順に依存してしまうため、
+        // プラグイン有効化時とカメラ差し替え時にここで並びを確定させる
+        public void PrepareAll()
+        {
+            var camera = EffectControllerBase.cameraObject;
+            if (camera == null)
+            {
+                return;
+            }
+
+            var ordered = new List<EffectControllerBase>();
+            foreach (var controller in controllers)
+            {
+                if (Array.IndexOf(ComponentOrder, controller.effectId) < 0)
+                {
+                    ordered.Add(controller);
+                }
+            }
+            foreach (var id in ComponentOrder)
+            {
+                var controller = GetController(id);
+                if (controller != null)
+                {
+                    ordered.Add(controller);
+                }
+            }
+
+            // AddComponent 直後に各 Effect の OnEnable が走り、depthTextureMode |= Depth が
+            // 無効化後も残る (OnDisable で戻す実装がない)。無効なエフェクトの深度パスを
+            // 常駐させないため、追加前の値へ戻す
+            var unityCamera = camera.GetComponent<Camera>();
+            var depthMode = unityCamera != null ? unityCamera.depthTextureMode : DepthTextureMode.None;
+
+            foreach (var controller in ordered)
+            {
+                try
+                {
+                    controller.Prepare();
+                }
+                catch (Exception e)
+                {
+                    MTEUtils.LogException(e);
+                    MTEUtils.LogError("エフェクトの事前追加に失敗しました: {0}", controller.effectName);
+                }
+            }
+
+            if (unityCamera != null)
+            {
+                unityCamera.depthTextureMode = depthMode;
+            }
+            _preparedCamera = camera;
+        }
+
         // ゲーム側 (CameraMain.Update 等) の書き込みより後に適用するため LateUpdate で処理する
         public override void LateUpdate()
         {
+            // カメラが差し替わった (初回・シーン遷移・VR 切替) フレームで並びを組み直す
+            if (EffectControllerBase.cameraObject != _preparedCamera)
+            {
+                PrepareAll();
+            }
+
             foreach (var controller in controllers)
             {
                 try
