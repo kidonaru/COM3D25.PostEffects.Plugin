@@ -236,6 +236,7 @@
     <Compile Include="MTEUtils\EditorStateClient.cs" />
     <Compile Include="MTEUtils\TimelineLayerGateClient.cs" />
     <Compile Include="MTEUtils\AutoEditModeClient.cs" />
+    <Compile Include="MTEUtils\HistoryClient.cs" />
     <Compile Include="MTEUtils\IGUIWindow.cs" />
     <Compile Include="MTEUtils\IScreenScalableWindow.cs" />
     <Compile Include="MTEUtils\ITabVisibleWindow.cs" />

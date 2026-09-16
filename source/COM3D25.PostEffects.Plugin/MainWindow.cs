@@ -57,10 +57,40 @@ namespace COM3D25.PostEffects.Plugin
         /// <summary>SceneEditor 側のポストエフェクトレイヤーのクラス名。TimelineLayerGateHost / AutoEditModeHost の文字列契約</summary>
         private const string POST_EFFECT_LAYER_NAME = "PostEffectTimelineLayer";
 
-        // タイムライン対応コントローラの値を書く直前に SceneEditor の編集モードへ入る。
-        // 毎フレーム描画で使うため、クロージャを都度生成せず 1 本を使い回す
-        private readonly Action _enterAutoEditMode =
-            () => AutoEditModeClient.Enter(POST_EFFECT_LAYER_NAME);
+        // 値を書く直前に SceneEditor の編集モードへ入り、変更前の状態を履歴に控える。
+        // GUIComboBox は描画時にフックのデリゲートを掴み、ポップアップ確定時 (描画パス終了後) に
+        // 呼ぶため、対象をフィールドで差し替える方式だと確定時に対象を見失う。
+        // コントローラごとのクロージャをキャッシュして、デリゲート自体が対象を持つようにする
+        private readonly Dictionary<EffectControllerBase, Action> _beforeEditHooks =
+            new Dictionary<EffectControllerBase, Action>();
+
+        // 履歴の捕捉・復元はプリセット XML で全エフェクトを丸ごと扱う (エフェクト単位の直列化は無い)
+        private static readonly Func<string> CaptureHistoryState = () => presetManager.CapturePresetXml();
+        private static readonly Action<string> ApplyHistoryState = xml => presetManager.ApplyPresetXml(xml);
+
+        private Action GetBeforeEditHook(EffectControllerBase controller)
+        {
+            Action hook;
+            if (!_beforeEditHooks.TryGetValue(controller, out hook))
+            {
+                hook = () => BeforeEdit(controller);
+                _beforeEditHooks[controller] = hook;
+            }
+            return hook;
+        }
+
+        /// <summary>
+        /// 値を書く直前に呼ぶ。編集モードへ入ってレイヤーを切り替え、履歴の変更前を控える。
+        /// HistoryClient.BeforeEdit もホスト側で編集モードへ入るが、レイヤー切替は
+        /// AutoEditModeClient.Enter だけが行うため両方呼ぶ
+        /// </summary>
+        private static void BeforeEdit(EffectControllerBase controller)
+        {
+            AutoEditModeClient.Enter(POST_EFFECT_LAYER_NAME);
+            HistoryClient.BeforeEdit(
+                "ポストエフェクト: " + controller.effectName, controller.effectId,
+                CaptureHistoryState, ApplyHistoryState);
+        }
 
         /// <summary>
         /// タイムラインが駆動する 6 系統か。エフェクトタブで触ったときも
@@ -242,11 +272,14 @@ namespace COM3D25.PostEffects.Plugin
                 if (view.DrawButton("リセット", 60, 20))
                 {
                     var category = _categoryComboBox.currentItem;
-                    // カテゴリ内にタイムライン対応の系統があれば、書き換える前に編集モードへ入る。
+                    // カテゴリ内にタイムライン対応の系統があれば、書き換える前に編集モードへ入り履歴を控える。
                     // このボタンは DrawEffectRow の外にありフックが差さっていないため、ここだけ直接呼ぶ
                     if (HasTimelineDrivenController(category))
                     {
                         AutoEditModeClient.Enter(POST_EFFECT_LAYER_NAME);
+                        HistoryClient.BeforeEdit(
+                            "ポストエフェクト: " + category.GetName() + " をリセット", "category:" + category,
+                            CaptureHistoryState, ApplyHistoryState);
                     }
                     ResetCategory(category);
                 }
@@ -371,7 +404,7 @@ namespace COM3D25.PostEffects.Plugin
             var isTimelineDriven = IsTimelineDriven(controller);
             if (isTimelineDriven)
             {
-                view.onBeforeValueChanged = _enterAutoEditMode;
+                view.onBeforeValueChanged = GetBeforeEditHook(controller);
             }
 
             try
