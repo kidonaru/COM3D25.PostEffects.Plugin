@@ -68,10 +68,7 @@ namespace COM3D25.PostEffects.Plugin
         /// </summary>
         private bool IsTimelineDriven(EffectControllerBase controller)
         {
-            if (_timelineControllers.Count == 0)
-            {
-                InitTimelineControllers();
-            }
+            EnsureTimelineControllers();
             return _timelineControllers.Contains(controller);
         }
 
@@ -245,7 +242,8 @@ namespace COM3D25.PostEffects.Plugin
                 if (view.DrawButton("リセット", 60, 20))
                 {
                     var category = _categoryComboBox.currentItem;
-                    // カテゴリ内にタイムライン対応の系統があれば、書き換える前に編集モードへ入る
+                    // カテゴリ内にタイムライン対応の系統があれば、書き換える前に編集モードへ入る。
+                    // このボタンは DrawEffectRow の外にありフックが差さっていないため、ここだけ直接呼ぶ
                     if (HasTimelineDrivenController(category))
                     {
                         AutoEditModeClient.Enter(POST_EFFECT_LAYER_NAME);
@@ -282,11 +280,7 @@ namespace COM3D25.PostEffects.Plugin
         /// </summary>
         private void DrawTimelineContent(GUIView view)
         {
-            if (_timelineControllers.Count == 0)
-            {
-                InitTimelineControllers();
-            }
-            if (_timelineControllers.Count == 0)
+            if (!EnsureTimelineControllers())
             {
                 return;
             }
@@ -334,10 +328,14 @@ namespace COM3D25.PostEffects.Plugin
         }
 
         // コントローラ登録の完了後に確実に解決させるため、描画時に遅延で組み立てる。
-        // 1 件も解決できなければ空のままなので、呼び出し側は次回描画で再試行する
-        private void InitTimelineControllers()
+        // 1 件も解決できなければ空のままにして次回描画で再試行する (戻り値は解決できたか)
+        private bool EnsureTimelineControllers()
         {
-            _timelineControllers.Clear();
+            if (_timelineControllers.Count > 0)
+            {
+                return true;
+            }
+
             var manager = postEffectManager;
             _timelineControllers.Add(manager.GetController<DepthOfFieldController>());
             _timelineControllers.Add(manager.GetController<GTToneMapController>());
@@ -347,6 +345,7 @@ namespace COM3D25.PostEffects.Plugin
             _timelineControllers.Add(manager.GetController<BloomController>());
             // 登録前に呼ばれた場合に null を掴まないよう除去する
             _timelineControllers.RemoveAll(c => c == null);
+            return _timelineControllers.Count > 0;
         }
 
         // カテゴリ内のエフェクトをまとめて無効化し、値も初期状態へ戻す
