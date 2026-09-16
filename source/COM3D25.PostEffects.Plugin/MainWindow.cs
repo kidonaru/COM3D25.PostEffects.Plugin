@@ -54,8 +54,38 @@ namespace COM3D25.PostEffects.Plugin
         private int _timelineTabIndex = 0;
         private const float TIMELINE_TAB_WIDTH = 100f;
 
-        /// <summary>SceneEditor 側のポストエフェクトレイヤーのクラス名。TimelineLayerGateHost の文字列契約</summary>
+        /// <summary>SceneEditor 側のポストエフェクトレイヤーのクラス名。TimelineLayerGateHost / AutoEditModeHost の文字列契約</summary>
         private const string POST_EFFECT_LAYER_NAME = "PostEffectTimelineLayer";
+
+        // タイムライン対応コントローラの値を書く直前に SceneEditor の編集モードへ入る。
+        // 毎フレーム描画で使うため、クロージャを都度生成せず 1 本を使い回す
+        private readonly Action _enterAutoEditMode =
+            () => AutoEditModeClient.Enter(POST_EFFECT_LAYER_NAME);
+
+        /// <summary>
+        /// タイムラインが駆動する 6 系統か。エフェクトタブで触ったときも
+        /// 編集モードへ入らないと再生値に巻き戻されるため、タブに関わらずこれで判定する
+        /// </summary>
+        private bool IsTimelineDriven(EffectControllerBase controller)
+        {
+            if (_timelineControllers.Count == 0)
+            {
+                InitTimelineControllers();
+            }
+            return _timelineControllers.Contains(controller);
+        }
+
+        private bool HasTimelineDrivenController(EffectCategory category)
+        {
+            foreach (var controller in postEffectManager.controllers)
+            {
+                if (controller.category == category && IsTimelineDriven(controller))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         private string _presetName = "";
 
@@ -214,7 +244,13 @@ namespace COM3D25.PostEffects.Plugin
                 view.currentPos.x = view.viewRect.width - 80;
                 if (view.DrawButton("リセット", 60, 20))
                 {
-                    ResetCategory(_categoryComboBox.currentItem);
+                    var category = _categoryComboBox.currentItem;
+                    // カテゴリ内にタイムライン対応の系統があれば、書き換える前に編集モードへ入る
+                    if (HasTimelineDrivenController(category))
+                    {
+                        AutoEditModeClient.Enter(POST_EFFECT_LAYER_NAME);
+                    }
+                    ResetCategory(category);
                 }
             }
             view.EndLayout();
@@ -332,37 +368,57 @@ namespace COM3D25.PostEffects.Plugin
 
         private void DrawEffectRow(GUIView view, EffectControllerBase controller)
         {
-            view.BeginHorizontal();
+            // タイムライン対応の系統は、この行と設定項目の値変更で編集モードへ自動移行する
+            var isTimelineDriven = IsTimelineDriven(controller);
+            if (isTimelineDriven)
             {
-                // 行のチェックボックスが有効トグルそのもの。ON で下に設定項目を展開する
-                view.DrawToggle(controller.effectName, controller.effectEnabled,
-                    view.viewRect.width - 90, 20, value =>
+                view.onBeforeValueChanged = _enterAutoEditMode;
+            }
+
+            try
+            {
+                view.BeginHorizontal();
                 {
-                    controller.effectEnabled = value;
-                    settings.dirty = true;
-                });
+                    // 行のチェックボックスが有効トグルそのもの。ON で下に設定項目を展開する
+                    view.DrawToggle(controller.effectName, controller.effectEnabled,
+                        view.viewRect.width - 90, 20, value =>
+                    {
+                        controller.effectEnabled = value;
+                        settings.dirty = true;
+                    });
+
+                    if (controller.effectEnabled)
+                    {
+                        view.currentPos.x = view.viewRect.width - 80;
+                        if (view.DrawButton("リセット", 60, 20))
+                        {
+                            // DrawButton はフックを通さないため、書き換える直前に自分で通す
+                            view.NotifyBeforeValueChanged();
+                            controller.ResetSetting();
+                        }
+                    }
+                }
+                view.EndLayout();
 
                 if (controller.effectEnabled)
                 {
-                    view.currentPos.x = view.viewRect.width - 80;
-                    if (view.DrawButton("リセット", 60, 20))
-                    {
-                        controller.ResetSetting();
-                    }
+                    // 設定項目を左右にインデントして、行との親子関係を見せる
+                    var savedPadding = view.padding;
+                    view.padding = new Vector2(savedPadding.x + 15, savedPadding.y);
+                    controller.DrawContent(view);
+                    view.padding = savedPadding;
+                }
+
+                view.DrawHorizontalLine(Color.gray);
+            }
+            finally
+            {
+                // 次の行 (タイムライン非対応の系統) へフックを持ち越さない
+                if (isTimelineDriven)
+                {
+                    view.onBeforeValueChanged = null;
                 }
             }
-            view.EndLayout();
-
-            if (controller.effectEnabled)
-            {
-                // 設定項目を左右にインデントして、行との親子関係を見せる
-                var savedPadding = view.padding;
-                view.padding = new Vector2(savedPadding.x + 15, savedPadding.y);
-                controller.DrawContent(view);
-                view.padding = savedPadding;
-            }
-
-            view.DrawHorizontalLine(Color.gray);
         }
 
         private void DrawPresetContent(GUIView view)

@@ -90,14 +90,18 @@ namespace COM3D25.PostEffects.Plugin
                     }
                 }
 
+                // DrawButton は onBeforeValueChanged を通さないため、
+                // データを書き換える直前に自分で通す (編集モードへの自動移行用)
                 if (view.DrawButton("追加", 60, 20, count < maxCount))
                 {
+                    view.NotifyBeforeValueChanged();
                     s.AddData(createData());
                     dataIndex = s.GetDataCount() - 1;
                     SetDirty();
                 }
                 if (view.DrawButton("削除", 60, 20, count > 0))
                 {
+                    view.NotifyBeforeValueChanged();
                     s.RemoveData(dataIndex);
                     SetDirty();
                 }
