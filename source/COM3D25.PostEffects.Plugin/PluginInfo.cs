@@ -7,7 +7,7 @@ namespace COM3D25.PostEffects.Plugin
         public const string PluginName = "PostEffects";
         // dll 名と揃える (UnityInjector のプラグイン登録名・ログ表記に使われる)。両バージョンで統一
         public const string PluginFullName = "COM3D25." + PluginName + ".Plugin";
-        public const string PluginVersion = "2.2.0.0";
+        public const string PluginVersion = "2.2.1.0";
         public const string WindowName = PluginName + " " + PluginVersion;
 
         public readonly static byte[] Icon = Convert.FromBase64String(
