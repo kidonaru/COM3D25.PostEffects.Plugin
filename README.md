@@ -49,6 +49,24 @@ COM3D25.PostEffects.Plugin\
 
 COM3D2.5 Ver.3.49.0 で動作確認済みです。
 
+## COM3D2.SceneCapture.Plugin との併用について
+
+同じカメラの同じコンポーネントを両プラグインが取り合うため、**併用は推奨しません**。
+本プラグインは SceneCapture のエフェクトをほぼ網羅しており、SceneCapture のプリセットは
+プリセット画面から取り込めます。
+
+やむを得ず併用する場合、本プラグインは SceneCapture の初期化が終わるまでカメラへ触らずに待ちます
+（この待機が無いと SceneCapture の初期化が失敗し、以後エラーを吐き続けます）。
+この挙動は `Sybaris\UnityInjector\Config\PostEffects.xml` の `sceneCaptureCompat` を
+`false` にすると切れます。
+
+併用時の制限:
+
+- **同じエフェクトを両方から操作しないでください。** 本プラグインは毎フレーム値を書き込むため、
+  SceneCapture 側の操作が打ち消されます
+- SceneCapture が先にコンポーネントを追加するため、本プラグインのエフェクト適用順
+  （描画順）の指定は本プラグイン固有のエフェクトにしか効きません
+
 ## 使い方
 
 - ギアメニューのアイコン、または `Alt+P` でウィンドウを開閉
