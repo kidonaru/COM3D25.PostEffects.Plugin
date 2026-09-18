@@ -76,11 +76,12 @@ namespace COM3D25.PostEffects.Plugin
             if (_waitStartTime < 0f)
             {
                 _waitStartTime = Time.realtimeSinceStartup;
-                // 併用自体が非推奨の構成なので、気づけるよう警告で出す
+                // 待つと SceneCapture のコンポーネントが先に並ぶため、PrepareAll で固定している
+                // 適用順が崩れて絵が変わる。原因不明の見た目の変化として悩まないよう警告で出す
                 MTEUtils.LogWarning(
-                    "SceneCapture を検出しました。併用は推奨されません" +
-                    " (同じエフェクトを両方から操作すると競合します)。" +
-                    "SceneCapture の初期化が終わるまでエフェクトの適用を保留します");
+                    "SceneCapture を検出したため互換モードで動作します。" +
+                    "本プラグインのエフェクトが SceneCapture のエフェクトより後段に回るため、" +
+                    "単独使用時とは適用順 (見た目) が変わります");
                 return false;
             }
 
