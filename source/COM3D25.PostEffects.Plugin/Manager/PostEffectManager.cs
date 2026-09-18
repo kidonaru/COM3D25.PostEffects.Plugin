@@ -184,6 +184,14 @@ namespace COM3D25.PostEffects.Plugin
         // プラグイン有効化時とカメラ差し替え時にここで並びを確定させる
         public void PrepareAll()
         {
+            // SceneCapture 併用時は、SceneCapture がコンポーネントを追加し終えるまで触らない。
+            // 空のコンポーネントを先置きすると SceneCapture の初期化が落ちる (SceneCaptureCompat)。
+            // _preparedCamera を更新しないため、次フレームの LateUpdate で再試行される
+            if (!SceneCaptureCompat.CanTouchCamera())
+            {
+                return;
+            }
+
             var camera = EffectControllerBase.cameraObject;
             if (camera == null)
             {
@@ -242,6 +250,13 @@ namespace COM3D25.PostEffects.Plugin
         // ゲーム側 (CameraMain.Update 等) の書き込みより後に適用するため LateUpdate で処理する
         public override void LateUpdate()
         {
+            // Prepare だけ止めても、有効なエフェクトの Apply 側 (GetOrAddComponent) から
+            // コンポーネントが追加されて同じ衝突を起こすため、適用ごと保留する
+            if (!SceneCaptureCompat.CanTouchCamera())
+            {
+                return;
+            }
+
             // カメラが差し替わった (初回・シーン遷移・VR 切替) フレームで並びを組み直す
             if (EffectControllerBase.cameraObject != _preparedCamera)
             {
