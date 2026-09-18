@@ -23,6 +23,10 @@ namespace COM3D25.PostEffects.Plugin
         public float keyRepeatTime = 1f / 30f;
         public bool useHSVColor = false;
 
+        // SceneCapture (COM3D2.SceneCapture.Plugin) 併用時に、SceneCapture の初期化が
+        // 終わるまでカメラへ触らずに待つ。SceneCapture 未導入なら何もしない (SceneCaptureCompat)
+        public bool sceneCaptureCompat = true;
+
         // 表示設定
         public int mainWindowPosX = -1;
         public int mainWindowPosY = -1;

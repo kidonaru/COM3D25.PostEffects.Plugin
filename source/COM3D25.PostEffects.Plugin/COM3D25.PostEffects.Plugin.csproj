@@ -223,6 +223,7 @@
     <Compile Include="Manager\ManagerBase.cs" />
     <Compile Include="Manager\PostEffectManager.cs" />
     <Compile Include="Manager\PresetManager.cs" />
+    <Compile Include="Manager\SceneCaptureCompat.cs" />
     <Compile Include="Manager\SceneCaptureImporter.cs" />
     <Compile Include="Manager\WindowManager.cs" />
     <Compile Include="MTEUtils\ColorExtensions.cs" />
