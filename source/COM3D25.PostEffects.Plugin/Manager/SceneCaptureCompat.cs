@@ -76,7 +76,11 @@ namespace COM3D25.PostEffects.Plugin
             if (_waitStartTime < 0f)
             {
                 _waitStartTime = Time.realtimeSinceStartup;
-                MTEUtils.Log("SceneCapture を検出しました。初期化が終わるまでエフェクトの適用を保留します");
+                // 併用自体が非推奨の構成なので、気づけるよう警告で出す
+                MTEUtils.LogWarning(
+                    "SceneCapture を検出しました。併用は推奨されません" +
+                    " (同じエフェクトを両方から操作すると競合します)。" +
+                    "SceneCapture の初期化が終わるまでエフェクトの適用を保留します");
                 return false;
             }
 
