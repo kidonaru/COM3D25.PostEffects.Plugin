@@ -119,6 +119,8 @@ namespace COM3D25.PostEffects.Plugin
             }
         }
 
+        // 通常は Type.GetType で足りるが、SceneCapture プラグインのロードが自分より後の場合は
+        // null を返すため、AppDomain の読み込み済みアセンブリからも探す
         private static Type FindInstancesType()
         {
             var type = Type.GetType(InstancesTypeName + ", " + HostAssemblyName);

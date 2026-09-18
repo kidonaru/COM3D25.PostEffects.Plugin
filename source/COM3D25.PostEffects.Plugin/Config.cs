@@ -24,7 +24,7 @@ namespace COM3D25.PostEffects.Plugin
         public bool useHSVColor = false;
 
         // SceneCapture (COM3D2.SceneCapture.Plugin) 併用時に、SceneCapture の初期化が
-        // 終わるまでカメラへ触らずに待つ。SceneCapture 未導入なら何もしない (SceneCaptureCompat)
+        // 終わるまでカメラへ触らずに待つ。SceneCapture 未導入なら何もしない
         public bool sceneCaptureCompat = true;
 
         // 表示設定

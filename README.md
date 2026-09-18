@@ -58,7 +58,7 @@ COM3D2.5 Ver.3.49.0 で動作確認済みです。
 やむを得ず併用する場合、本プラグインは SceneCapture の初期化が終わるまでカメラへ触らずに待ちます
 （この待機が無いと SceneCapture の初期化が失敗し、以後エラーを吐き続けます）。
 この挙動は `Sybaris\UnityInjector\Config\PostEffects.xml` の `sceneCaptureCompat` を
-`false` にすると切れます。
+`false` にすると切れます（判定は起動直後に一度だけ行うため、ゲーム中に切り替えても効きません）。
 
 併用時の制限:
 

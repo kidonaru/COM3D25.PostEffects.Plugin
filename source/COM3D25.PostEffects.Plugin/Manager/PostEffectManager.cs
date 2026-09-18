@@ -185,7 +185,7 @@ namespace COM3D25.PostEffects.Plugin
         public void PrepareAll()
         {
             // SceneCapture 併用時は、SceneCapture がコンポーネントを追加し終えるまで触らない。
-            // 空のコンポーネントを先置きすると SceneCapture の初期化が落ちる (SceneCaptureCompat)。
+            // 空のコンポーネントを先置きすると SceneCapture の初期化が落ちる。
             // _preparedCamera を更新しないため、次フレームの LateUpdate で再試行される
             if (!SceneCaptureCompat.CanTouchCamera())
             {
