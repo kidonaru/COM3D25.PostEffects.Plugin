@@ -48,6 +48,17 @@ namespace COM3D25.PostEffects.Plugin
         // メインウィンドウのタブ内容を描画する
         public abstract void DrawContent(GUIView view);
 
+        // 編集中データのコピー/ペーストに対応するか (true ならエフェクト行のリセット左にボタンを出す)
+        public virtual bool supportsDataClipboard => false;
+        public virtual bool canCopyData => false;
+        public virtual bool canPasteData => false;
+
+        // 編集中データをプラグイン内のクリップボードへ控える
+        public virtual void CopyData() { }
+
+        // クリップボードの内容を編集中データへ上書きする
+        public virtual void PasteData() { }
+
         // PostEffectManager.PrepareAll からも参照するため internal。外部連携には公開しない
         internal static GameObject cameraObject
         {

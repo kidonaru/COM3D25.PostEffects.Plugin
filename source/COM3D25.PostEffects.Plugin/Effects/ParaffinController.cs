@@ -78,6 +78,38 @@ namespace COM3D25.PostEffects.Plugin
             SetDirty();
         }
 
+        // コピー元データの複製。コピー後に元データを編集・削除しても影響を受けないよう実体を分ける
+        private ColorParaffinData _clipboard = null;
+
+        // エフェクト行は DrawContent の範囲補正より先に描かれ、タイムライン側でデータ数が
+        // 減ったフレームは _dataIndex が範囲外に残るため、ここでも補正して参照する
+        private int clampedDataIndex => Mathf.Clamp(_dataIndex, 0, Mathf.Max(setting.GetDataCount() - 1, 0));
+
+        public override bool supportsDataClipboard => true;
+        public override bool canCopyData => setting.GetData(clampedDataIndex) != null;
+        public override bool canPasteData => _clipboard != null && setting.GetData(clampedDataIndex) != null;
+
+        public override void CopyData()
+        {
+            var data = setting.GetData(clampedDataIndex);
+            if (data == null)
+            {
+                return;
+            }
+            _clipboard = new ColorParaffinData();
+            _clipboard.CopyFrom(data);
+        }
+
+        public override void PasteData()
+        {
+            if (_clipboard == null)
+            {
+                return;
+            }
+            setting.SetData(clampedDataIndex, _clipboard);
+            SetDirty();
+        }
+
         public override void DrawContent(GUIView view)
         {
             var s = setting;

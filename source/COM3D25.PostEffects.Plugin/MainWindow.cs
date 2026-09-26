@@ -54,6 +54,9 @@ namespace COM3D25.PostEffects.Plugin
         private int _timelineTabIndex = 0;
         private const float TIMELINE_TAB_WIDTH = 100f;
 
+        // エフェクト行右端のボタン (コピー/ペースト/リセット) 1 個分の幅
+        private const float ROW_BUTTON_WIDTH = 60f;
+
         /// <summary>SceneEditor 側のポストエフェクトレイヤーのクラス名。TimelineLayerGateHost / AutoEditModeHost の文字列契約</summary>
         private const string POST_EFFECT_LAYER_NAME = "PostEffectTimelineLayer";
 
@@ -411,18 +414,36 @@ namespace COM3D25.PostEffects.Plugin
             {
                 view.BeginHorizontal();
                 {
-                    // 行のチェックボックスが有効トグルそのもの。ON で下に設定項目を展開する
+                    // 行のチェックボックスが有効トグルそのもの。ON で下に設定項目を展開する。
+                    // 右端のボタン群 (コピー/ペースト/リセット) の分だけ幅を空ける
+                    var showClipboard = controller.effectEnabled && controller.supportsDataClipboard;
+                    var resetX = view.viewRect.width - 20 - ROW_BUTTON_WIDTH;
+                    var buttonsX = showClipboard ? resetX - (ROW_BUTTON_WIDTH + view.margin) * 2 : resetX;
                     view.DrawToggle(controller.effectName, controller.effectEnabled,
-                        view.viewRect.width - 90, 20, value =>
+                        buttonsX - 10, 20, value =>
                     {
                         controller.effectEnabled = value;
                         settings.dirty = true;
                     });
 
+                    if (showClipboard)
+                    {
+                        view.currentPos.x = buttonsX;
+                        if (view.DrawButton("コピー", ROW_BUTTON_WIDTH, 20, controller.canCopyData))
+                        {
+                            controller.CopyData();
+                        }
+                        if (view.DrawButton("ペースト", ROW_BUTTON_WIDTH, 20, controller.canPasteData))
+                        {
+                            view.NotifyBeforeValueChanged();
+                            controller.PasteData();
+                        }
+                    }
+
                     if (controller.effectEnabled)
                     {
-                        view.currentPos.x = view.viewRect.width - 80;
-                        if (view.DrawButton("リセット", 60, 20))
+                        view.currentPos.x = resetX;
+                        if (view.DrawButton("リセット", ROW_BUTTON_WIDTH, 20))
                         {
                             // DrawButton はフックを通さないため、書き換える直前に自分で通す
                             view.NotifyBeforeValueChanged();
