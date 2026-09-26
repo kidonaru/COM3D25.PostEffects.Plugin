@@ -6,7 +6,7 @@ namespace COM3D25.PostEffects.Plugin
     /// <summary>
     /// パラフィン (画面周辺の色フィルター)。MTE 由来の CommandBuffer 実装 (PostEffectHub) を使う
     /// </summary>
-    public class ParaffinController : EffectControllerBase
+    public class ParaffinController : MultiDataEffectControllerBase<ColorParaffinData>
     {
         public override string effectName => "パラフィン";
 
@@ -15,6 +15,8 @@ namespace COM3D25.PostEffects.Plugin
             get => settings.paraffin;
             set => settings.paraffin = value;
         }
+
+        protected override PostEffectSettingsBase<ColorParaffinData> dataSettings => setting;
 
         public override bool effectEnabled
         {
@@ -30,9 +32,6 @@ namespace COM3D25.PostEffects.Plugin
                 }
             }
         }
-
-        // GUI で編集対象にしているデータ番号
-        private int _dataIndex = 0;
 
         private static readonly string[] MaskModeNames = { "なし", "キャラ除外", "キャラのみ" };
 
@@ -78,38 +77,6 @@ namespace COM3D25.PostEffects.Plugin
             SetDirty();
         }
 
-        // コピー元データの複製。コピー後に元データを編集・削除しても影響を受けないよう実体を分ける
-        private ColorParaffinData _clipboard = null;
-
-        // エフェクト行は DrawContent の範囲補正より先に描かれ、タイムライン側でデータ数が
-        // 減ったフレームは _dataIndex が範囲外に残るため、ここでも補正して参照する
-        private int clampedDataIndex => Mathf.Clamp(_dataIndex, 0, Mathf.Max(setting.GetDataCount() - 1, 0));
-
-        public override bool supportsDataClipboard => true;
-        public override bool canCopyData => setting.GetData(clampedDataIndex) != null;
-        public override bool canPasteData => _clipboard != null && setting.GetData(clampedDataIndex) != null;
-
-        public override void CopyData()
-        {
-            var data = setting.GetData(clampedDataIndex);
-            if (data == null)
-            {
-                return;
-            }
-            _clipboard = new ColorParaffinData();
-            _clipboard.CopyFrom(data);
-        }
-
-        public override void PasteData()
-        {
-            if (_clipboard == null)
-            {
-                return;
-            }
-            setting.SetData(clampedDataIndex, _clipboard);
-            SetDirty();
-        }
-
         public override void DrawContent(GUIView view)
         {
             var s = setting;
@@ -123,8 +90,7 @@ namespace COM3D25.PostEffects.Plugin
                 return;
             }
 
-            _dataIndex = Mathf.Clamp(_dataIndex, 0, s.GetDataCount() - 1);
-            var data = s.GetData(_dataIndex);
+            var data = GetEditingData();
 
             view.DrawToggle("有効", data.enabled, 120, 20, value => { data.enabled = value; SetDirty(); });
 

@@ -6,7 +6,7 @@ namespace COM3D25.PostEffects.Plugin
     /// <summary>
     /// 距離フォグ (深度ベースの色フェード)。MTE 由来の CommandBuffer 実装 (PostEffectHub) を使う
     /// </summary>
-    public class DistanceFogController : EffectControllerBase
+    public class DistanceFogController : MultiDataEffectControllerBase<DistanceFogData>
     {
         public override string effectName => "距離フォグ";
 
@@ -15,6 +15,8 @@ namespace COM3D25.PostEffects.Plugin
             get => settings.distanceFog;
             set => settings.distanceFog = value;
         }
+
+        protected override PostEffectSettingsBase<DistanceFogData> dataSettings => setting;
 
         public override bool effectEnabled
         {
@@ -30,9 +32,6 @@ namespace COM3D25.PostEffects.Plugin
                 }
             }
         }
-
-        // GUI で編集対象にしているデータ番号
-        private int _dataIndex = 0;
 
         public override void Prepare()
         {
@@ -82,8 +81,7 @@ namespace COM3D25.PostEffects.Plugin
                 return;
             }
 
-            _dataIndex = Mathf.Clamp(_dataIndex, 0, s.GetDataCount() - 1);
-            var data = s.GetData(_dataIndex);
+            var data = GetEditingData();
 
             view.DrawToggle("有効", data.enabled, 120, 20, value => { data.enabled = value; SetDirty(); });
 

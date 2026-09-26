@@ -6,7 +6,7 @@ namespace COM3D25.PostEffects.Plugin
     /// <summary>
     /// リムライト (法線ベースの輪郭光)。MTE 由来の CommandBuffer 実装 (PostEffectHub) を使う
     /// </summary>
-    public class RimlightController : EffectControllerBase
+    public class RimlightController : MultiDataEffectControllerBase<RimlightData>
     {
         public override string effectName => "リムライト";
 
@@ -15,6 +15,8 @@ namespace COM3D25.PostEffects.Plugin
             get => settings.rimlight;
             set => settings.rimlight = value;
         }
+
+        protected override PostEffectSettingsBase<RimlightData> dataSettings => setting;
 
         public override bool effectEnabled
         {
@@ -30,9 +32,6 @@ namespace COM3D25.PostEffects.Plugin
                 }
             }
         }
-
-        // GUI で編集対象にしているデータ番号
-        private int _dataIndex = 0;
 
         private static readonly string[] MaskModeNames = { "なし", "キャラ除外", "キャラのみ" };
 
@@ -91,8 +90,7 @@ namespace COM3D25.PostEffects.Plugin
                 return;
             }
 
-            _dataIndex = Mathf.Clamp(_dataIndex, 0, s.GetDataCount() - 1);
-            var data = s.GetData(_dataIndex);
+            var data = GetEditingData();
 
             view.DrawToggle("有効", data.enabled, 120, 20, value => { data.enabled = value; SetDirty(); });
 

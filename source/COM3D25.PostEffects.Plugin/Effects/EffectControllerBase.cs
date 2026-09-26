@@ -139,6 +139,57 @@ namespace COM3D25.PostEffects.Plugin
         }
     }
 
+    // 複数データを持つエフェクト (パラフィン/距離フォグ/リムライト) の共通部。
+    // GUI で編集対象にしているデータ番号と、データ単位のコピー/ペーストを受け持つ
+    public abstract class MultiDataEffectControllerBase<TData> : EffectControllerBase
+        where TData : class, IPostEffectData, new()
+    {
+        // GUI で編集対象にしているデータ番号
+        protected int _dataIndex = 0;
+
+        // コピー元データの複製。コピー後に元データを編集・削除しても影響を受けないよう実体を分ける
+        private TData _clipboard = null;
+
+        protected abstract PostEffectSettingsBase<TData> dataSettings { get; }
+
+        // エフェクト行は DrawContent の範囲補正より先に描かれ、タイムライン側でデータ数が
+        // 減ったフレームは _dataIndex が範囲外に残るため、ここでも補正して参照する
+        private int clampedDataIndex =>
+            Mathf.Clamp(_dataIndex, 0, Mathf.Max(dataSettings.GetDataCount() - 1, 0));
+
+        // 編集対象のデータ番号を範囲内へ補正して、そのデータを返す (0 件なら null)
+        protected TData GetEditingData()
+        {
+            _dataIndex = clampedDataIndex;
+            return dataSettings.GetData(_dataIndex);
+        }
+
+        public override bool supportsDataClipboard => true;
+        public override bool canCopyData => dataSettings.GetData(clampedDataIndex) != null;
+        public override bool canPasteData => _clipboard != null && dataSettings.GetData(clampedDataIndex) != null;
+
+        public override void CopyData()
+        {
+            var data = dataSettings.GetData(clampedDataIndex);
+            if (data == null)
+            {
+                return;
+            }
+            _clipboard = new TData();
+            _clipboard.CopyFrom(data);
+        }
+
+        public override void PasteData()
+        {
+            if (_clipboard == null)
+            {
+                return;
+            }
+            dataSettings.SetData(clampedDataIndex, _clipboard);
+            SetDirty();
+        }
+    }
+
     public abstract class EffectControllerBase<TComponent, TSetting> : EffectControllerBase
         where TComponent : Behaviour
         where TSetting : class, new()
