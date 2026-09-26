@@ -33,6 +33,9 @@ namespace COM3D25.PostEffects.Plugin
         public int mainWindowWidth = 400;
         public int mainWindowHeight = 600;
 
+        // 色1/色2 を持つエフェクトの簡易表示。色2 は色1 の RGB を流用し、不透明度だけを編集する
+        public bool simpleGradientColor = false;
+
         // 起動時に読み込むプリセット名。既定は固定プリセット
         public string startupPresetName = PresetManager.DefaultPresetName;
 

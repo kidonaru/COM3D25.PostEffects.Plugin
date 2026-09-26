@@ -85,15 +85,9 @@ namespace COM3D25.PostEffects.Plugin
 
             view.DrawToggle("有効", data.enabled, 120, 20, value => { data.enabled = value; SetDirty(); });
 
-            view.DrawColor(
-                view.GetColorFieldCache("色1", true),
-                data.color1,
-                new Color(1f, 1f, 1f, 1f),
-                color => { data.color1 = color; SetDirty(); });
-            view.DrawColor(
-                view.GetColorFieldCache("色2", true),
-                data.color2,
-                new Color(1f, 1f, 1f, 0f),
+            DrawGradientColors(view, data.color1, data.color2,
+                new Color(1f, 1f, 1f, 1f), new Color(1f, 1f, 1f, 0f),
+                color => { data.color1 = color; SetDirty(); },
                 color => { data.color2 = color; SetDirty(); });
 
             DrawSlider(view, "開始深度", 0f, 100f, 0f, data.fogStart, v => data.fogStart = v, 0.1f);

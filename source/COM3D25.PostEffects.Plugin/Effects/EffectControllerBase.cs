@@ -120,6 +120,81 @@ namespace COM3D25.PostEffects.Plugin
             view.EndLayout();
         }
 
+        // 色1 → 色2 のグラデーション色 (パラフィン/距離フォグ/リムライト) を描画する。
+        // 簡易表示では色2 の RGB を色1 から流用し、色2 は不透明度だけを編集させる。
+        // 簡易表示の切替は表示だけを変え、データは書き換えない。色2 の RGB が色1 と
+        // 異なるデータ (プリセット・ペースト・タイムライン由来) は食い違いを隠さないよう
+        // 通常表示で描き、「揃える」ボタンで明示的に揃えさせる
+        protected static void DrawGradientColors(GUIView view,
+            Color color1, Color color2, Color resetColor1, Color resetColor2,
+            Action<Color> onColor1Changed, Action<Color> onColor2Changed)
+        {
+            var config = ConfigManager.instance.config;
+            var simple = config.simpleGradientColor;
+
+            view.BeginHorizontal();
+            {
+                view.DrawLabel("色", 90, 20);
+
+                view.BeginColor(simple ? GUIView.option.accentColor : Color.white);
+                if (view.DrawTextureButton(PluginResources.changeIcon, 20, 20, 0,
+                    tooltip: "簡易表示切替 (色2 は色1 の不透明度違いにする)"))
+                {
+                    simple = !simple;
+                    config.simpleGradientColor = simple;
+                    config.dirty = true;
+                }
+                view.EndColor();
+
+                if (simple && !IsSameRgb(color1, color2)
+                    && view.DrawButton("色2 を色1 に揃える", 140, 20))
+                {
+                    // DrawButton は onBeforeValueChanged を通さないため自分で通す
+                    view.NotifyBeforeValueChanged();
+                    color2 = WithAlpha(color1, color2.a);
+                    onColor2Changed(color2);
+                }
+            }
+            view.EndLayout();
+
+            if (!simple || !IsSameRgb(color1, color2))
+            {
+                view.DrawColor(view.GetColorFieldCache("色1", true), color1, resetColor1, onColor1Changed);
+                view.DrawColor(view.GetColorFieldCache("色2", true), color2, resetColor2, onColor2Changed);
+                return;
+            }
+
+            var alpha2 = color2.a;
+            view.DrawColor(view.GetColorFieldCache("色1", true), color1, resetColor1, c =>
+            {
+                onColor1Changed(c);
+                onColor2Changed(WithAlpha(c, alpha2));
+            });
+
+            view.DrawSliderValue(new GUIView.SliderOption
+            {
+                label = "色2 不透明度",
+                labelWidth = 100,
+                width = -1,
+                min = 0f,
+                max = 1f,
+                step = 0.01f,
+                defaultValue = resetColor2.a,
+                value = alpha2,
+                onChanged = a => onColor2Changed(WithAlpha(color1, a)),
+            });
+        }
+
+        private static bool IsSameRgb(Color a, Color b)
+        {
+            return a.r == b.r && a.g == b.g && a.b == b.b;
+        }
+
+        private static Color WithAlpha(Color color, float alpha)
+        {
+            return new Color(color.r, color.g, color.b, alpha);
+        }
+
         // エフェクトの設定項目はほぼ同じ体裁のスライダーなので、その定型をまとめたもの
         protected void DrawSlider(GUIView view, string label, float min, float max, float defaultValue,
             float value, Action<float> onChanged, float step = 0.01f)
