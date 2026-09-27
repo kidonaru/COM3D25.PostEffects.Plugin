@@ -130,70 +130,118 @@ namespace COM3D25.PostEffects.Plugin
             Action<Color> onColor1Changed, Action<Color> onColor2Changed)
         {
             var config = ConfigManager.instance.config;
-            var simple = config.simpleGradientColor;
+            var simple = config.simpleGradientColor && IsSameRgb(color1, color2);
+
+            if (simple)
+            {
+                var alpha2 = color2.a;
+                view.DrawColor(view.GetColorFieldCache("色1", true), color1, resetColor1, c =>
+                {
+                    onColor1Changed(c);
+                    onColor2Changed(WithAlpha(c, alpha2));
+                });
+            }
+            else
+            {
+                view.DrawColor(view.GetColorFieldCache("色1", true), color1, resetColor1, onColor1Changed);
+            }
+
+            // 切替ボタン類は色2 の行の右端に置く。DrawColor は自前で横並びを閉じて
+            // 入れ子にできないため、先にボタン類を描いてから行頭へ戻して色2 の行を重ねる
+            // (layoutMaxPos.y は最大値を保つので、戻しても次の行の位置は崩れない)。
+            // 狭いウィンドウでは色2 の行の中身と重なるため、行の下へ別行で置く
+            var rowWidth = view.viewRect.width - view.padding.x * 2;
+            var iconX = rowWidth - GRADIENT_ICON_SIZE;
+            var buttonsWidth = GRADIENT_ICON_SIZE + view.margin + GRADIENT_ALIGN_BUTTON_WIDTH;
+            var colorRowWidth = COLOR_ROW_CONTENT_WIDTH + view.margin * 5;
+            var fitsInRow = colorRowWidth + buttonsWidth <= rowWidth;
+
+            if (fitsInRow)
+            {
+                var rowY = view.currentPos.y;
+                DrawGradientButtons(view, iconX, color1, ref color2, onColor2Changed);
+                view.currentPos.y = rowY;
+            }
+
+            // 切替・揃えるの結果は、同じフレームの色2 の行から反映する
+            simple = config.simpleGradientColor && IsSameRgb(color1, color2);
+            if (simple)
+            {
+                view.DrawSliderValue(new GUIView.SliderOption
+                {
+                    label = "色2 不透明度",
+                    labelWidth = 100,
+                    width = fitsInRow ? iconX - view.margin : -1,
+                    min = 0f,
+                    max = 1f,
+                    step = 0.01f,
+                    defaultValue = resetColor2.a,
+                    value = color2.a,
+                    onChanged = a => onColor2Changed(WithAlpha(color1, a)),
+                });
+            }
+            else
+            {
+                view.DrawColor(view.GetColorFieldCache("色2", true), color2, resetColor2, onColor2Changed);
+            }
+
+            if (!fitsInRow)
+            {
+                DrawGradientButtons(view, iconX, color1, ref color2, onColor2Changed);
+            }
+        }
+
+        // 簡易表示の切替アイコンと、簡易表示中に RGB が食い違うときの「揃える」ボタンを
+        // 右寄せの 1 行で描く
+        private static void DrawGradientButtons(GUIView view, float iconX,
+            Color color1, ref Color color2, Action<Color> onColor2Changed)
+        {
+            var config = ConfigManager.instance.config;
 
             view.BeginHorizontal();
             {
-                view.DrawLabel("色", 90, 20);
+                if (config.simpleGradientColor && !IsSameRgb(color1, color2))
+                {
+                    view.currentPos.x = iconX - view.margin - GRADIENT_ALIGN_BUTTON_WIDTH;
+                    if (view.DrawButton("揃える", GRADIENT_ALIGN_BUTTON_WIDTH, 20))
+                    {
+                        // DrawButton は onBeforeValueChanged を通さないため自分で通す
+                        view.NotifyBeforeValueChanged();
+                        color2 = WithAlpha(color1, color2.a);
+                        onColor2Changed(color2);
+                    }
+                }
 
-                view.BeginColor(simple ? GUIView.option.accentColor : Color.white);
-                if (view.DrawTextureButton(PluginResources.changeIcon, 20, 20, 0,
+                view.currentPos.x = iconX;
+                view.BeginColor(config.simpleGradientColor ? GUIView.option.accentColor : Color.white);
+                if (view.DrawTextureButton(PluginResources.changeIcon, GRADIENT_ICON_SIZE, GRADIENT_ICON_SIZE, 0,
                     tooltip: "簡易表示切替 (色2 は色1 の不透明度違いにする)"))
                 {
-                    simple = !simple;
-                    config.simpleGradientColor = simple;
+                    config.simpleGradientColor = !config.simpleGradientColor;
                     config.dirty = true;
                 }
                 view.EndColor();
-
-                if (simple && !IsSameRgb(color1, color2)
-                    && view.DrawButton("色2 を色1 に揃える", 140, 20))
-                {
-                    // DrawButton は onBeforeValueChanged を通さないため自分で通す
-                    view.NotifyBeforeValueChanged();
-                    color2 = WithAlpha(color1, color2.a);
-                    onColor2Changed(color2);
-                }
             }
             view.EndLayout();
-
-            if (!simple || !IsSameRgb(color1, color2))
-            {
-                view.DrawColor(view.GetColorFieldCache("色1", true), color1, resetColor1, onColor1Changed);
-                view.DrawColor(view.GetColorFieldCache("色2", true), color2, resetColor2, onColor2Changed);
-                return;
-            }
-
-            var alpha2 = color2.a;
-            view.DrawColor(view.GetColorFieldCache("色1", true), color1, resetColor1, c =>
-            {
-                onColor1Changed(c);
-                onColor2Changed(WithAlpha(c, alpha2));
-            });
-
-            view.DrawSliderValue(new GUIView.SliderOption
-            {
-                label = "色2 不透明度",
-                labelWidth = 100,
-                width = -1,
-                min = 0f,
-                max = 1f,
-                step = 0.01f,
-                defaultValue = resetColor2.a,
-                value = alpha2,
-                onChanged = a => onColor2Changed(WithAlpha(color1, a)),
-            });
         }
 
+        // HEX 表示と同じ 8bit 精度で比べる。ピッカーやタイムライン補間で生じる
+        // 1/255 未満の誤差まで食い違いとみなすと、見た目が同じなのに「揃える」が出てしまう
         private static bool IsSameRgb(Color a, Color b)
         {
-            return a.r == b.r && a.g == b.g && a.b == b.b;
+            return a.IntR() == b.IntR() && a.IntG() == b.IntG() && a.IntB() == b.IntB();
         }
 
         private static Color WithAlpha(Color color, float alpha)
         {
             return new Color(color.r, color.g, color.b, alpha);
         }
+
+        private const float GRADIENT_ICON_SIZE = 20f;
+        private const float GRADIENT_ALIGN_BUTTON_WIDTH = 60f;
+        // GUIView.DrawColor の 1 行の要素幅の合計 (ラベル 90 + 色見本 20 + HEX 100 + R 20 + 編集 45)。
+        // 要素間の margin は含まない
+        private const float COLOR_ROW_CONTENT_WIDTH = 275f;
 
         // エフェクトの設定項目はほぼ同じ体裁のスライダーなので、その定型をまとめたもの
         protected void DrawSlider(GUIView view, string label, float min, float max, float defaultValue,
