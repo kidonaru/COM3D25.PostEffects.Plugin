@@ -20,7 +20,7 @@
 | DTO の持ち方（SceneEditor 側） | 共有 DTO を直接使う。`DepthOfFieldData` のようなプラグイン内の複製クラスは作らない | ブルーム計画の Global Constraints を踏襲する（複製は追従漏れの温床になる） |
 | `PostEffectDataLerp` | 追加しない | 現行の SceneEditor は `LerpScratch` で補間しており、`PostEffectDataLerp` はどこからも呼ばれていない |
 | ホスト API が無い場合 | `PostEffectsClient` で**任意メソッド**として解決する（`ShowTimelineMode` と同じ扱い）。旧版 PostEffects でも他 6 系統は動き続ける | ブルームは必須メソッドにしたため、旧版 PostEffects だと全ポストエフェクトが止まった（ブルーム計画の「レビュー却下メモ」）。同じ轍を踏まない |
-| 項目順 | ボーン一覧・PostEffects のタイムラインタブとも、ブルームの後（末尾） | 既存項目の位置を動かさない |
+| 項目順 | SceneEditor のボーン一覧はブルームの後（末尾）。PostEffects のタイムラインタブは実装後のユーザー要望で「被写界深度」タブ内の 2 行目に変更 | 既存項目の位置を動かさない |
 
 ## Global Constraints
 
@@ -1330,7 +1330,7 @@ git commit -m "feat(posteffect): シネマティック被写界深度の編集 U
 ゲームを停止した状態で両プラグインの DLL を配置する（配置方法はユーザーに確認する。`debug.bat` はゲーム停止中に実機へ反映するので、ユーザーの了承を得てから実行する）。起動後、SceneEditor のタイムラインで以下を確認する。
 
 1. ポストエフェクトレイヤーのボーン一覧の末尾（ブルームの後）に「シネマティックDoF」が出る。
-2. PostEffects のタイムラインタブに「シネマティック被写界深度」のタブが出る。そこで値を変えると SceneEditor の編集モードへ移り、Undo できる（`IsTimelineDriven` 経由の既存の仕組み）。
+2. PostEffects のタイムラインモードの「被写界深度」タブ内に、被写界深度に続けてシネマティック被写界深度が出る（実装後のユーザー要望で独立タブから変更）。そこで値を変えると SceneEditor の編集モードへ移り、Undo できる（`IsTimelineDriven` 経由の既存の仕組み）。
 3. SceneEditor の Inspector でピント範囲・ぼけ半径などを変えると、画面へ即座に反映される。
 4. 2 か所のフレームへ違うピント範囲でキーを打って再生すると、連続して変化する。品質・絞りの形・追従メイドは区間の開始値のまま切り替わる。
 5. PostEffects 側で「ピント位置を可視化」を ON にし、ボケ画像のパスを設定する。その状態でタイムラインを再生しても、両方が保たれる。

@@ -47,10 +47,14 @@ namespace COM3D25.PostEffects.Plugin
             _modeIndex = MODE_TIMELINE;
         }
 
-        // タイムライン対応 7 系統。表示順は SceneEditor のポストエフェクトレイヤーの項目順に合わせる
+        // タイムライン対応 7 系統。所属判定 (IsTimelineDriven) 専用で、並び順に意味は無い
         private readonly List<EffectControllerBase> _timelineControllers = new List<EffectControllerBase>();
 
-        // タイムラインタブ内で表示中のエフェクト
+        // タイムラインタブ内のタブ。同系統のエフェクトは 1 タブにまとめる (被写界深度とシネマティック被写界深度)。
+        // タブ名は先頭のエフェクト名。タブの並びは SceneEditor のポストエフェクトレイヤーの項目順に合わせる
+        private readonly List<List<EffectControllerBase>> _timelineTabs = new List<List<EffectControllerBase>>();
+
+        // タイムラインタブ内で表示中のタブ
         private int _timelineTabIndex = 0;
         private const float TIMELINE_TAB_WIDTH = 100f;
 
@@ -311,7 +315,7 @@ namespace COM3D25.PostEffects.Plugin
 
         /// <summary>
         /// タイムライン対応 7 系統のビュー。
-        /// SceneEditor のタイムラインが駆動する対象をエフェクトごとのタブで切り替えて編集する。
+        /// SceneEditor のタイムラインが駆動する対象をタブで切り替えて編集する。
         /// 描画は既存の DrawEffectRow をそのまま使う (個別タブと同じ操作性)
         /// </summary>
         private void DrawTimelineContent(GUIView view)
@@ -330,21 +334,24 @@ namespace COM3D25.PostEffects.Plugin
             // レイヤー名は SceneEditor 側 PostEffectTimelineLayer のクラス名 (文字列契約)
             TimelineLayerGateDrawer.Begin(view, POST_EFFECT_LAYER_NAME, 20f);
 
-            var controller = _timelineControllers[Mathf.Clamp(_timelineTabIndex, 0, _timelineControllers.Count - 1)];
+            var tab = _timelineTabs[Mathf.Clamp(_timelineTabIndex, 0, _timelineTabs.Count - 1)];
 
             view.BeginScrollView(-1, GetScrollHeight(view), GUIView.AutoScrollViewRect, false, true);
             {
-                DrawEffectRow(view, controller);
+                foreach (var controller in tab)
+                {
+                    DrawEffectRow(view, controller);
+                }
             }
             view.EndScrollView();
         }
 
-        // エフェクト名のタブ行。幅が足りなければ次の行へ折り返す
+        // タブ名の行。幅が足りなければ次の行へ折り返す
         private void DrawTimelineTabs(GUIView view)
         {
             view.BeginHorizontal();
             {
-                for (var i = 0; i < _timelineControllers.Count; i++)
+                for (var i = 0; i < _timelineTabs.Count; i++)
                 {
                     if (view.currentPos.x + TIMELINE_TAB_WIDTH > view.viewRect.width)
                     {
@@ -353,7 +360,7 @@ namespace COM3D25.PostEffects.Plugin
                     }
 
                     var selected = i == _timelineTabIndex;
-                    if (view.DrawButton(_timelineControllers[i].effectName, TIMELINE_TAB_WIDTH, 20, true,
+                    if (view.DrawButton(_timelineTabs[i][0].effectName, TIMELINE_TAB_WIDTH, 20, true,
                         selected ? GUIView.option.accentColor : Color.white))
                     {
                         _timelineTabIndex = i;
@@ -373,16 +380,29 @@ namespace COM3D25.PostEffects.Plugin
             }
 
             var manager = postEffectManager;
-            _timelineControllers.Add(manager.GetController<DepthOfFieldController>());
-            _timelineControllers.Add(manager.GetController<GTToneMapController>());
-            _timelineControllers.Add(manager.GetController<ParaffinController>());
-            _timelineControllers.Add(manager.GetController<DistanceFogController>());
-            _timelineControllers.Add(manager.GetController<RimlightController>());
-            _timelineControllers.Add(manager.GetController<BloomController>());
-            _timelineControllers.Add(manager.GetController<CinematicDepthOfFieldController>());
-            // 登録前に呼ばれた場合に null を掴まないよう除去する
-            _timelineControllers.RemoveAll(c => c == null);
+            AddTimelineTab(
+                manager.GetController<DepthOfFieldController>(),
+                manager.GetController<CinematicDepthOfFieldController>());
+            AddTimelineTab(manager.GetController<GTToneMapController>());
+            AddTimelineTab(manager.GetController<ParaffinController>());
+            AddTimelineTab(manager.GetController<DistanceFogController>());
+            AddTimelineTab(manager.GetController<RimlightController>());
+            AddTimelineTab(manager.GetController<BloomController>());
             return _timelineControllers.Count > 0;
+        }
+
+        // controllers を 1 タブとして _timelineTabs と _timelineControllers の両方へ登録する
+        private void AddTimelineTab(params EffectControllerBase[] controllers)
+        {
+            var tab = new List<EffectControllerBase>(controllers);
+            // 登録前に呼ばれた場合に null を掴まないよう除去する
+            tab.RemoveAll(c => c == null);
+            if (tab.Count == 0)
+            {
+                return;
+            }
+            _timelineTabs.Add(tab);
+            _timelineControllers.AddRange(tab);
         }
 
         // カテゴリ内のエフェクトをまとめて無効化し、値も初期状態へ戻す
