@@ -47,7 +47,7 @@ namespace COM3D25.PostEffects.Plugin
             _modeIndex = MODE_TIMELINE;
         }
 
-        // タイムライン対応 6 系統。表示順は SceneEditor のポストエフェクトレイヤーの項目順に合わせる
+        // タイムライン対応 7 系統。表示順は SceneEditor のポストエフェクトレイヤーの項目順に合わせる
         private readonly List<EffectControllerBase> _timelineControllers = new List<EffectControllerBase>();
 
         // タイムラインタブ内で表示中のエフェクト
@@ -96,7 +96,7 @@ namespace COM3D25.PostEffects.Plugin
         }
 
         /// <summary>
-        /// タイムラインが駆動する 6 系統か。エフェクトタブで触ったときも
+        /// タイムラインが駆動する 7 系統か。エフェクトタブで触ったときも
         /// 編集モードへ入らないと再生値に巻き戻されるため、タブに関わらずこれで判定する
         /// </summary>
         private bool IsTimelineDriven(EffectControllerBase controller)
@@ -310,7 +310,7 @@ namespace COM3D25.PostEffects.Plugin
         }
 
         /// <summary>
-        /// タイムライン対応 6 系統のビュー。
+        /// タイムライン対応 7 系統のビュー。
         /// SceneEditor のタイムラインが駆動する対象をエフェクトごとのタブで切り替えて編集する。
         /// 描画は既存の DrawEffectRow をそのまま使う (個別タブと同じ操作性)
         /// </summary>
@@ -379,6 +379,7 @@ namespace COM3D25.PostEffects.Plugin
             _timelineControllers.Add(manager.GetController<DistanceFogController>());
             _timelineControllers.Add(manager.GetController<RimlightController>());
             _timelineControllers.Add(manager.GetController<BloomController>());
+            _timelineControllers.Add(manager.GetController<CinematicDepthOfFieldController>());
             // 登録前に呼ばれた場合に null を掴まないよう除去する
             _timelineControllers.RemoveAll(c => c == null);
             return _timelineControllers.Count > 0;

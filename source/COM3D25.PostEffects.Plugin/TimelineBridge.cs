@@ -8,6 +8,7 @@ using BloomEffect = PostEffects_Dummy.Bloom;
 #else
 using BloomEffect = global::Bloom;
 #endif
+using CinematicDof = COM3D25.PostEffects.Plugin.CinematicDepthOfFieldEffect;
 
 namespace COM3D25.PostEffects.Plugin
 {
@@ -17,8 +18,8 @@ namespace COM3D25.PostEffects.Plugin
     /// **メソッド名・引数の個数と型を変えると連携が黙って切れる**。
     /// 値の受け渡しは MTEUtils の共有 DTO で行い、実体型との相互コピーはここで閉じる。
     /// 再生中は毎フレーム呼ばれるため、XML を挟まず設定値を直接読み書きする。
-    /// 対象はタイムライン対応 6 系統
-    /// (DoF / GTToneMap / パラフィン / 距離フォグ / リムライト / ブルーム) のみ
+    /// 対象はタイムライン対応 7 系統
+    /// (DoF / GTToneMap / パラフィン / 距離フォグ / リムライト / ブルーム / シネマティック DoF) のみ
     /// </summary>
     public static class TimelineBridge
     {
@@ -245,6 +246,34 @@ namespace COM3D25.PostEffects.Plugin
             settings.dirty = true;
         }
 
+        public static PEData.CinematicDepthOfFieldData GetCinematicDepthOfField()
+        {
+            var setting = settings.cinematicDepthOfField;
+            var dto = new PEData.CinematicDepthOfFieldData();
+            ReflectionFieldCopier.Copy(setting, dto);
+            // enum は int と代入互換が無く ReflectionFieldCopier で写らない
+            dto.tweakMode = (int)setting.tweakMode;
+            dto.filteringQuality = (int)setting.filteringQuality;
+            dto.apertureShape = (int)setting.apertureShape;
+            return dto;
+        }
+
+        public static void ApplyCinematicDepthOfField(PEData.CinematicDepthOfFieldData data)
+        {
+            // 実体は差し替えず、既存インスタンスへ写す。DTO に無い項目
+            // (ピント位置の可視化・ボケテクスチャのパス) は PostEffects 側 UI の値のまま残る
+            var setting = settings.cinematicDepthOfField;
+            ReflectionFieldCopier.Copy(data, setting);
+            // タイムライン XML の手編集やバージョン差で定義域外の値が来ても
+            // 未定義の enum 値にならないよう丸める
+            setting.tweakMode = (CinematicDof.TweakMode)ClampEnumValue(data.tweakMode, _maxTweakMode);
+            setting.filteringQuality = (CinematicDof.QualityPreset)ClampEnumValue(
+                data.filteringQuality, _maxQualityPreset);
+            setting.apertureShape = (CinematicDof.ApertureShape)ClampEnumValue(
+                data.apertureShape, _maxApertureShape);
+            settings.dirty = true;
+        }
+
         /// <summary>
         /// ブルームのうち ReflectionFieldCopier では写らない項目を実体 → DTO へ写す。
         /// enum は int と代入互換が無く、分離設定はネストクラスで型が食い違うため、
@@ -290,8 +319,11 @@ namespace COM3D25.PostEffects.Plugin
         private static readonly int _maxHdrMode = GetMaxEnumValue(typeof(BloomEffect.HDRBloomMode));
         private static readonly int _maxScreenBlendMode = GetMaxEnumValue(typeof(BloomEffect.BloomScreenBlendMode));
         private static readonly int _maxLensFlareMode = GetMaxEnumValue(typeof(BloomEffect.LensFlareStyle));
+        private static readonly int _maxTweakMode = GetMaxEnumValue(typeof(CinematicDof.TweakMode));
+        private static readonly int _maxQualityPreset = GetMaxEnumValue(typeof(CinematicDof.QualityPreset));
+        private static readonly int _maxApertureShape = GetMaxEnumValue(typeof(CinematicDof.ApertureShape));
 
-        /// <summary>0 始まりの連番 enum の最大値。ブルームの enum は 3 種ともこの形</summary>
+        /// <summary>0 始まりの連番 enum の最大値。ブルームとシネマティック被写界深度の enum はどれもこの形</summary>
         private static int GetMaxEnumValue(Type enumType)
         {
             return Enum.GetValues(enumType).Length - 1;
