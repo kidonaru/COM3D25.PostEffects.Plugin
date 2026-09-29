@@ -150,8 +150,8 @@ namespace COM3D25.PostEffects.Plugin
                     }
                     else
                     {
-                        var screenPos = GUIUtility.GUIToScreenPoint(buttonRect.position);
-                        var anchorRect = new Rect(screenPos.x, screenPos.y, buttonRect.width, buttonRect.height);
+                        // UI 倍率の拡大行列下では GUIUtility.GUIToScreenPoint が誤るため GUIScale で換算する
+                        var anchorRect = GUIScale.GUIToScreenRect(buttonRect);
 
                         picker.Open(this, label, path, _searchDir, PluginUtils.UserDataPath, onChanged, anchorRect);
                     }

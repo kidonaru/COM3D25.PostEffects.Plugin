@@ -33,10 +33,17 @@ namespace COM3D25.PostEffects.Plugin
             labelWidth = 70,
         };
 
-        private static readonly string[] ModeNames = { "エフェクト", "タイムライン", "プリセット" };
+        private static readonly string[] ModeNames = { "エフェクト", "タイムライン", "プリセット", "設定" };
 
-        private int _modeIndex = 0;  // 0: エフェクト, 1: タイムライン, 2: プリセット
+        private int _modeIndex = 0;  // 0: エフェクト, 1: タイムライン, 2: プリセット, 3: 設定
         private const int MODE_TIMELINE = 1;
+        private const int MODE_SETTING = 3;
+
+        // モード切替ボタンの幅。「設定」は文字数が少ないので詰めて、右端の「有効」トグルとの間を空ける
+        private const int MODE_BUTTON_WIDTH = 80;
+        private const int SETTING_MODE_BUTTON_WIDTH = 50;
+
+        private readonly UIScaleSliderRow _uiScaleRow = new UIScaleSliderRow();
 
         /// <summary>
         /// タイムラインモードへ切り替える。SceneEditor がタイムラインを読み込んだときに
@@ -160,7 +167,7 @@ namespace COM3D25.PostEffects.Plugin
 
         private void InitView()
         {
-            _rootView.Init(new Rect(0, 0, windowRect.width, windowRect.height));
+            _rootView.Init(localWindowRect);
 
             _contentView.parent = _rootView;
             _contentView.Init(contentRect);
@@ -198,6 +205,7 @@ namespace COM3D25.PostEffects.Plugin
             // 無効化経路 (OnPluginDisable) からも Close が呼ばれるため、
             // 有効なときだけ触って isEnable セッターの再入に頼らない
             base.Close();
+            _uiScaleRow.Discard();
 
             if (plugin.isEnable)
             {
@@ -205,8 +213,22 @@ namespace COM3D25.PostEffects.Plugin
             }
         }
 
+        // 描かれない間は操作の終わりを判定できないため、保留中の UI 倍率は反映せず捨てる
+        protected override void OnTabVisibleChanged(bool visible)
+        {
+            _uiScaleRow.Discard();
+        }
+
         protected override void DrawContent()
         {
+            // モードを切り替えても保留が残らないよう、モードに関係なく毎回判定する
+            float newScale;
+            if (_uiScaleRow.TryCommit(config.uiScale, out newScale))
+            {
+                config.uiScale = newScale;
+                config.dirty = true;
+            }
+
             _rootView.ResetLayout();
 
             try
@@ -233,7 +255,8 @@ namespace COM3D25.PostEffects.Plugin
                 for (var i = 0; i < ModeNames.Length; i++)
                 {
                     var selected = i == _modeIndex;
-                    if (view.DrawButton(ModeNames[i], 80, 20, true, selected ? GUIView.option.accentColor : (Color?)null))
+                    var buttonWidth = i == MODE_SETTING ? SETTING_MODE_BUTTON_WIDTH : MODE_BUTTON_WIDTH;
+                    if (view.DrawButton(ModeNames[i], buttonWidth, 20, true, selected ? GUIView.option.accentColor : (Color?)null))
                     {
                         _modeIndex = i;
                     }
@@ -256,9 +279,25 @@ namespace COM3D25.PostEffects.Plugin
             {
                 DrawTimelineContent(view);
             }
-            else
+            else if (_modeIndex == 2)
             {
                 DrawPresetContent(view);
+            }
+            else
+            {
+                DrawSettingContent(view);
+            }
+        }
+
+        /// <summary>設定モード。UI 倍率 (SceneEditor が有効な間はそちらに従うため操作できない)</summary>
+        private void DrawSettingContent(GUIView view)
+        {
+            var following = UIScaleClient.isFollowingHost;
+            _uiScaleRow.Draw(view, "UI 倍率 %", 80, config.uiScale, !following);
+            if (following)
+            {
+                view.DrawLabel("SceneEditor の UI 倍率に従っています (SceneEditor の設定ウィンドウ「表示」タブで変更)",
+                    -1, 20, textColor: Color.gray);
             }
         }
 

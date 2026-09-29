@@ -245,6 +245,7 @@
     <Compile Include="MTEUtils\Extensions.cs" />
     <Compile Include="MTEUtils\GUICache.cs" />
     <Compile Include="MTEUtils\GUIComboBox.cs" />
+    <Compile Include="MTEUtils\GUIScale.cs" />
     <Compile Include="MTEUtils\GUIView.cs" />
     <Compile Include="MTEUtils\GearMenu.cs" />
     <Compile Include="MTEUtils\KeyBind.cs" />
@@ -260,6 +261,8 @@
     <Compile Include="MTEUtils\TexturePickerWindow.cs" />
     <Compile Include="MTEUtils\TooltipDrawer.cs" />
     <Compile Include="MTEUtils\TransformCache.cs" />
+    <Compile Include="MTEUtils\UIScaleClient.cs" />
+    <Compile Include="MTEUtils\UIScaleSliderRow.cs" />
     <Compile Include="MTEUtils\WindowManagerBase.cs" />
     <Compile Include="MTEUtils\WindowResizeController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

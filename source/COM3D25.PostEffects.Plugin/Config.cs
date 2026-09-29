@@ -23,6 +23,9 @@ namespace COM3D25.PostEffects.Plugin
         public float keyRepeatTime = 1f / 30f;
         public bool useHSVColor = false;
 
+        // UI 倍率 (1 = 100%)。SceneEditor が有効ならそちらに従い、この値は使わない
+        public float uiScale = 1f;
+
         // SceneCapture (COM3D2.SceneCapture.Plugin) 併用時に、SceneCapture の初期化が
         // 終わるまでカメラへ触らずに待つ。SceneCapture 未導入なら何もしない
         public bool sceneCaptureCompat = true;
