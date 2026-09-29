@@ -1,3 +1,4 @@
+using System.Reflection;
 using COM3D2.MotionTimelineEditor;
 using UnityEngine;
 #if COM3D25
@@ -46,22 +47,56 @@ namespace COM3D25.PostEffects.Plugin
 
         private Texture2D _capturedTexture;
 
+        // メインカメラの ScreenOverlay はゲームのフェード (CameraMain.m_FadeMyCamera) と共用。
+        // 暗転中に捕捉すると「有効・強度 0 (真っ黒)」を掴むため、有効状態と強度は捕捉せず復元時のフェード状態から決める
         protected override void Capture(ScreenOverlayEffect component)
         {
-            var c = _capturedSetting;
-            _capturedEnabled = component.enabled;
-            c.blendMode = component.blendMode;
-            c.intensity = component.intensity;
+            _capturedSetting.blendMode = component.blendMode;
             _capturedTexture = component.texture;
         }
 
         protected override void RestoreSetting(ScreenOverlayEffect component)
         {
-            var c = _capturedSetting;
-            component.enabled = _capturedEnabled;
-            component.blendMode = c.blendMode;
-            component.intensity = c.intensity;
+            component.blendMode = _capturedSetting.blendMode;
             component.texture = _capturedTexture;
+
+            // Restore は LateUpdate で走り、フェードのコルーチンが同じフレームで書き直さない。
+            // フェードアウト途中は明るい画が 1 フレーム挟まらないよう暗転側へ倒し、翌フレームからコルーチンに任せる。
+            // それ以外はフェードイン完了時 (CameraMain.FadeInNoUI) と同じ無効・強度 1 へ戻す
+            var darkened = IsFadingOutOrOut(component.GetComponent<CameraMain>());
+            component.enabled = darkened;
+            component.intensity = darkened ? 0f : 1f;
+        }
+
+        private static FieldInfo _myFadeStateField;
+        private static bool _myFadeStateFieldResolved;
+
+        // m_eMyFadeState は protected。公開メソッド (IsFadeProcNoUI) はフェードアウト途中 (ProcOut) と
+        // 暗転の保持 (Out) を区別できないためリフレクションで読む
+        private static bool IsFadingOutOrOut(CameraMain cameraMain)
+        {
+            if (cameraMain == null)
+            {
+                return false;
+            }
+
+            if (!_myFadeStateFieldResolved)
+            {
+                _myFadeStateFieldResolved = true;
+                _myFadeStateField = typeof(CameraMain).GetField("m_eMyFadeState",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                if (_myFadeStateField == null)
+                {
+                    MTEUtils.LogWarning("CameraMain のフェード状態が見つかりません。オーバーレイは無効状態へ戻します");
+                }
+            }
+            if (_myFadeStateField == null)
+            {
+                return false;
+            }
+
+            var state = (CameraMain.FadeState)_myFadeStateField.GetValue(cameraMain);
+            return state == CameraMain.FadeState.ProcOut || state == CameraMain.FadeState.Out;
         }
 
         private GUIComboBox<ScreenOverlayEffect.OverlayBlendMode> _blendModeComboBox = new GUIComboBox<ScreenOverlayEffect.OverlayBlendMode>
