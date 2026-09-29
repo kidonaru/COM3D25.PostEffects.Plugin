@@ -35,9 +35,13 @@ namespace COM3D25.PostEffects.Plugin
 
         private static readonly string[] ModeNames = { "エフェクト", "タイムライン", "プリセット", "設定" };
 
-        private int _modeIndex = 0;  // 0: エフェクト, 1: タイムライン, 2: プリセット, 3: 設定
+        // ModeNames の添字
+        private const int MODE_EFFECT = 0;
         private const int MODE_TIMELINE = 1;
+        private const int MODE_PRESET = 2;
         private const int MODE_SETTING = 3;
+
+        private int _modeIndex = MODE_EFFECT;
 
         // モード切替ボタンの幅。「設定」は文字数が少ないので詰めて、右端の「有効」トグルとの間を空ける
         private const int MODE_BUTTON_WIDTH = 80;
@@ -262,8 +266,9 @@ namespace COM3D25.PostEffects.Plugin
                     }
                 }
 
-                // 全エフェクトの一時無効化トグル。個々の有効状態は保ったまま適用だけを止める
-                view.currentPos.x = view.viewRect.width - 80;
+                // 全エフェクトの一時無効化トグル。個々の有効状態は保ったまま適用だけを止める。
+                // UI 倍率を上げると窓内の論理幅が縮むため、モードボタンに重ならない位置より左へは寄せない
+                view.currentPos.x = Mathf.Max(view.currentPos.x, view.viewRect.width - 80);
                 view.DrawToggle("有効", postEffectManager.effectsEnabled, 60, 20,
                     value => postEffectManager.effectsEnabled = value);
             }
@@ -271,15 +276,15 @@ namespace COM3D25.PostEffects.Plugin
 
             view.DrawHorizontalLine(Color.gray);
 
-            if (_modeIndex == 0)
+            if (_modeIndex == MODE_EFFECT)
             {
                 DrawEffectContent(view);
             }
-            else if (_modeIndex == 1)
+            else if (_modeIndex == MODE_TIMELINE)
             {
                 DrawTimelineContent(view);
             }
-            else if (_modeIndex == 2)
+            else if (_modeIndex == MODE_PRESET)
             {
                 DrawPresetContent(view);
             }
@@ -292,12 +297,12 @@ namespace COM3D25.PostEffects.Plugin
         /// <summary>設定モード。UI 倍率 (SceneEditor が有効な間はそちらに従うため操作できない)</summary>
         private void DrawSettingContent(GUIView view)
         {
+            // 従っている間は、使われない自前の値ではなく実際の倍率を見せる
             var following = UIScaleClient.isFollowingHost;
-            _uiScaleRow.Draw(view, "UI 倍率 %", 80, config.uiScale, !following);
+            _uiScaleRow.Draw(view, "UI 倍率 %", 80, following ? GUIScale.scale : config.uiScale, !following);
             if (following)
             {
-                view.DrawLabel("SceneEditor の UI 倍率に従っています (SceneEditor の設定ウィンドウ「表示」タブで変更)",
-                    -1, 20, textColor: Color.gray);
+                view.DrawLabel(UIScaleClient.FollowingHostMessage, -1, 20, textColor: Color.gray);
             }
         }
 
