@@ -227,10 +227,14 @@ namespace COM3D25.PostEffects.Plugin
         {
             // モードを切り替えても保留が残らないよう、モードに関係なく毎回判定する
             float newScale;
-            if (_uiScaleRow.TryCommit(config.uiScale, out newScale))
+            if (_uiScaleRow.TryCommit(UIScaleClient.Resolve(config.uiScale), out newScale))
             {
-                config.uiScale = newScale;
-                config.dirty = true;
+                // SceneEditor に従っている間はそちらの設定へ書き、書けなければ自前の設定へ書く
+                if (!UIScaleClient.TrySetHostScale(newScale))
+                {
+                    config.uiScale = newScale;
+                    config.dirty = true;
+                }
             }
 
             _rootView.ResetLayout();
@@ -294,15 +298,14 @@ namespace COM3D25.PostEffects.Plugin
             }
         }
 
-        /// <summary>設定モード。UI 倍率 (SceneEditor が有効な間はそちらに従うため操作できない)</summary>
+        /// <summary>設定モード。UI 倍率 (SceneEditor に従う間は変更もそちらへ書く)</summary>
         private void DrawSettingContent(GUIView view)
         {
             // 従っている間は、使われない自前の値ではなく実際の倍率を見せる
-            var following = UIScaleClient.isFollowingHost;
-            _uiScaleRow.Draw(view, "UI 倍率 %", 80, following ? GUIScale.scale : config.uiScale, !following);
-            if (following)
+            _uiScaleRow.Draw(view, "UI 倍率 %", 80, UIScaleClient.Resolve(config.uiScale), UIScaleClient.isScaleEditable);
+            if (UIScaleClient.isFollowingHost)
             {
-                view.DrawLabel(UIScaleClient.FollowingHostMessage, -1, 20, textColor: Color.gray);
+                view.DrawLabel(UIScaleClient.followingHostMessage, -1, 20, textColor: Color.gray);
             }
         }
 
