@@ -58,7 +58,7 @@ namespace COM3D25.PostEffects.Plugin
             _modeIndex = MODE_TIMELINE;
         }
 
-        // タイムライン対応 7 系統。所属判定 (IsTimelineDriven) 専用で、並び順に意味は無い
+        // タイムライン対応 8 系統。所属判定 (IsTimelineDriven) 専用で、並び順に意味は無い
         private readonly List<EffectControllerBase> _timelineControllers = new List<EffectControllerBase>();
 
         // タイムラインタブ内のタブ。同系統のエフェクトは 1 タブにまとめる (被写界深度とシネマティック被写界深度)。
@@ -111,7 +111,7 @@ namespace COM3D25.PostEffects.Plugin
         }
 
         /// <summary>
-        /// タイムラインが駆動する 7 系統か。エフェクトタブで触ったときも
+        /// タイムラインが駆動する 8 系統か。エフェクトタブで触ったときも
         /// 編集モードへ入らないと再生値に巻き戻されるため、タブに関わらずこれで判定する
         /// </summary>
         private bool IsTimelineDriven(EffectControllerBase controller)
@@ -361,7 +361,7 @@ namespace COM3D25.PostEffects.Plugin
         }
 
         /// <summary>
-        /// タイムライン対応 7 系統のビュー。
+        /// タイムライン対応 8 系統のビュー。
         /// SceneEditor のタイムラインが駆動する対象をタブで切り替えて編集する。
         /// 描画は既存の DrawEffectRow をそのまま使う (個別タブと同じ操作性)
         /// </summary>
@@ -435,6 +435,7 @@ namespace COM3D25.PostEffects.Plugin
             AddTimelineTab(manager.GetController<DistanceFogController>());
             AddTimelineTab(manager.GetController<RimlightController>());
             AddTimelineTab(manager.GetController<BloomController>());
+            AddTimelineTab(manager.GetController<ScreenOverlayController>());
             return _timelineControllers.Count > 0;
         }
 

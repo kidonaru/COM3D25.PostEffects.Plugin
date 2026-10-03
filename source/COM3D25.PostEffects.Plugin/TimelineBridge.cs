@@ -2,11 +2,13 @@ using System;
 using UnityEngine;
 using COM3D2.MotionTimelineEditor;
 using PEData = COM3D2.MotionTimelineEditor.PostEffects;
-// ブルームの enum を実体型へ戻すために BloomController と同じエイリアスを張る
+// ブルームとオーバーレイの enum を実体型へ戻すために各コントローラと同じエイリアスを張る
 #if COM3D25
 using BloomEffect = PostEffects_Dummy.Bloom;
+using ScreenOverlayEffect = PostEffects_Dummy.ScreenOverlay;
 #else
 using BloomEffect = global::Bloom;
+using ScreenOverlayEffect = global::ScreenOverlay;
 #endif
 using CinematicDof = COM3D25.PostEffects.Plugin.CinematicDepthOfFieldEffect;
 
@@ -18,8 +20,8 @@ namespace COM3D25.PostEffects.Plugin
     /// **メソッド名・引数の個数と型を変えると連携が黙って切れる**。
     /// 値の受け渡しは MTEUtils の共有 DTO で行い、実体型との相互コピーはここで閉じる。
     /// 再生中は毎フレーム呼ばれるため、XML を挟まず設定値を直接読み書きする。
-    /// 対象はタイムライン対応 7 系統
-    /// (DoF / GTToneMap / パラフィン / 距離フォグ / リムライト / ブルーム / シネマティック DoF) のみ
+    /// 対象はタイムライン対応 8 系統
+    /// (DoF / GTToneMap / パラフィン / 距離フォグ / リムライト / ブルーム / シネマティック DoF / オーバーレイ) のみ
     /// </summary>
     public static class TimelineBridge
     {
@@ -274,6 +276,31 @@ namespace COM3D25.PostEffects.Plugin
             settings.dirty = true;
         }
 
+        public static PEData.ScreenOverlayData GetScreenOverlay()
+        {
+            var setting = settings.screenOverlay;
+            var dto = new PEData.ScreenOverlayData();
+            ReflectionFieldCopier.Copy(setting, dto);
+            // enum は int と代入互換が無く ReflectionFieldCopier で写らない
+            dto.blendMode = (int)setting.blendMode;
+            dto.source = (int)setting.source;
+            return dto;
+        }
+
+        public static void ApplyScreenOverlay(PEData.ScreenOverlayData data)
+        {
+            // 実体は差し替えず、既存インスタンスへ写す。DTO に無い項目
+            // (テクスチャのパス) は PostEffects 側 UI の値のまま残る
+            var setting = settings.screenOverlay;
+            ReflectionFieldCopier.Copy(data, setting);
+            // タイムライン XML の手編集やバージョン差で定義域外の値が来ても
+            // 未定義の enum 値にならないよう丸める
+            setting.blendMode = (ScreenOverlayEffect.OverlayBlendMode)ClampEnumValue(
+                data.blendMode, _maxOverlayBlendMode);
+            setting.source = (ScreenOverlaySource)ClampEnumValue(data.source, _maxOverlaySource);
+            settings.dirty = true;
+        }
+
         /// <summary>
         /// ブルームのうち ReflectionFieldCopier では写らない項目を実体 → DTO へ写す。
         /// enum は int と代入互換が無く、分離設定はネストクラスで型が食い違うため、
@@ -322,8 +349,10 @@ namespace COM3D25.PostEffects.Plugin
         private static readonly int _maxTweakMode = GetMaxEnumValue(typeof(CinematicDof.TweakMode));
         private static readonly int _maxQualityPreset = GetMaxEnumValue(typeof(CinematicDof.QualityPreset));
         private static readonly int _maxApertureShape = GetMaxEnumValue(typeof(CinematicDof.ApertureShape));
+        private static readonly int _maxOverlayBlendMode = GetMaxEnumValue(typeof(ScreenOverlayEffect.OverlayBlendMode));
+        private static readonly int _maxOverlaySource = GetMaxEnumValue(typeof(ScreenOverlaySource));
 
-        /// <summary>0 始まりの連番 enum の最大値。ブルームとシネマティック被写界深度の enum はどれもこの形</summary>
+        /// <summary>0 始まりの連番 enum の最大値。ブルーム・シネマティック被写界深度・オーバーレイの enum はどれもこの形</summary>
         private static int GetMaxEnumValue(Type enumType)
         {
             return Enum.GetValues(enumType).Length - 1;
