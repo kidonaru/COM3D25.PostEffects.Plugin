@@ -10,12 +10,23 @@ using ScreenOverlayEffect = global::ScreenOverlay;
 
 namespace COM3D25.PostEffects.Plugin
 {
+    /// <summary>オーバーレイに重ねる画のソース。値は TimelineBridge で int として受け渡す</summary>
+    public enum ScreenOverlaySource
+    {
+        Texture = 0,
+        Color = 1,
+    }
+
     public class ScreenOverlaySetting
     {
         public bool enabled = false;
         // 既定値はゲームがメインカメラの ScreenOverlay に設定している値に合わせてある
         public ScreenOverlayEffect.OverlayBlendMode blendMode = ScreenOverlayEffect.OverlayBlendMode.Multiply;
         public float intensity = 1f;
+        // 既存プリセットの見た目を変えないよう、既定はテクスチャ
+        public ScreenOverlaySource source = ScreenOverlaySource.Texture;
+        // カラーソースで重ねる色。不透明の黒なら AlphaBlend + 強度 0→1 がそのまま暗転になる
+        public Color color = Color.black;
         // 絶対パス、または Config フォルダからの相対パス
         public string texturePath = "";
     }
@@ -38,11 +49,57 @@ namespace COM3D25.PostEffects.Plugin
 
         private readonly TextureFileCache _textureCache = new TextureFileCache(TextureFileCache.SUB_DIR_OVERLAY);
 
+        // カラーソース用の 1x1 単色テクスチャ。全テクセル同色なので UV 変換やフィルタの影響を受けない。
+        // コントローラはプロセス寿命の間 1 個だけなので、破棄せず使い回す
+        private Texture2D _solidTexture;
+        private Color32 _solidColor;
+
         protected override void ApplySetting(ScreenOverlayEffect component)
         {
             component.blendMode = setting.blendMode;
             component.intensity = setting.intensity;
-            component.texture = _textureCache.GetOrLoad(setting.texturePath);
+            component.texture = setting.source == ScreenOverlaySource.Color
+                ? GetSolidTexture(GetOverlayColor(setting))
+                : _textureCache.GetOrLoad(setting.texturePath);
+        }
+
+        /// <summary>
+        /// カラーソースで渡す色。AlphaBlend はシェーダーが強度を見ず α だけで混ぜるため、
+        /// 「強度 0→1 で色へフェード」の操作にそろうよう α に強度を掛けて渡す
+        /// </summary>
+        private static Color GetOverlayColor(ScreenOverlaySetting s)
+        {
+            var color = s.color;
+            if (s.blendMode == ScreenOverlayEffect.OverlayBlendMode.AlphaBlend)
+            {
+                color.a = Mathf.Clamp01(color.a * s.intensity);
+            }
+            return color;
+        }
+
+        // ApplySetting は有効中に毎フレーム呼ばれるため、色が変わったときだけ書き直す。
+        // テクスチャは RGBA32 なので、比較も同じ 8bit 精度 (Color32) で行う
+        private Texture2D GetSolidTexture(Color32 color)
+        {
+            if (_solidTexture == null)
+            {
+                _solidTexture = new Texture2D(1, 1, TextureFormat.RGBA32, false)
+                {
+                    wrapMode = TextureWrapMode.Clamp,
+                    filterMode = FilterMode.Point,
+                    name = "PostEffects ScreenOverlay Solid",
+                };
+            }
+            else if (_solidColor.r == color.r && _solidColor.g == color.g &&
+                _solidColor.b == color.b && _solidColor.a == color.a)
+            {
+                return _solidTexture;
+            }
+
+            _solidColor = color;
+            _solidTexture.SetPixels32(new[] { color });
+            _solidTexture.Apply(false);
+            return _solidTexture;
         }
 
         private Texture2D _capturedTexture;
@@ -106,6 +163,15 @@ namespace COM3D25.PostEffects.Plugin
             buttonSize = new Vector2(100, 20),
         };
 
+        private static readonly string[] SourceNames = { "テクスチャ", "カラー" };
+
+        private GUIComboBox<ScreenOverlaySource> _sourceComboBox = new GUIComboBox<ScreenOverlaySource>
+        {
+            items = MTEUtils.GetEnumValues<ScreenOverlaySource>(),
+            getName = (source, _) => SourceNames[(int)source],
+            buttonSize = new Vector2(100, 20),
+        };
+
         public override void DrawContent(GUIView view)
         {
             view.BeginHorizontal();
@@ -114,6 +180,15 @@ namespace COM3D25.PostEffects.Plugin
                 _blendModeComboBox.currentIndex = (int)setting.blendMode;
                 _blendModeComboBox.onSelected = (mode, _) => { setting.blendMode = mode; SetDirty(); };
                 _blendModeComboBox.DrawButton(view);
+            }
+            view.EndLayout();
+
+            view.BeginHorizontal();
+            {
+                view.DrawLabel("ソース", 100, 20);
+                _sourceComboBox.currentIndex = (int)setting.source;
+                _sourceComboBox.onSelected = (source, _) => { setting.source = source; SetDirty(); };
+                _sourceComboBox.DrawButton(view);
             }
             view.EndLayout();
 
@@ -130,8 +205,27 @@ namespace COM3D25.PostEffects.Plugin
                 onChanged = value => { setting.intensity = value; SetDirty(); },
             });
 
-            _textureCache.DrawPathField(view, "テクスチャパス", setting.texturePath,
-                value => { setting.texturePath = value; SetDirty(); });
+            var isAlphaBlend = setting.blendMode == ScreenOverlayEffect.OverlayBlendMode.AlphaBlend;
+            if (setting.source == ScreenOverlaySource.Color)
+            {
+                // ラベルはカラーピッカーの同定キーを兼ねるため、他エフェクトの「色」と衝突しない名前にする
+                view.DrawColor(view.GetColorFieldCache("オーバーレイ色", true), setting.color, Color.black,
+                    value => { setting.color = value; SetDirty(); });
+                view.DrawLabel(isAlphaBlend
+                        ? "不透明度は 色のアルファ × 強度 (1 で打ち止め)"
+                        : "色のアルファは AlphaBlend でのみ効きます",
+                    -1, 20, textColor: Color.gray);
+            }
+            else
+            {
+                _textureCache.DrawPathField(view, "テクスチャパス", setting.texturePath,
+                    value => { setting.texturePath = value; SetDirty(); });
+                if (isAlphaBlend)
+                {
+                    view.DrawLabel("AlphaBlend では強度は効かず、画像のアルファで混ざります", -1, 20,
+                        textColor: Color.gray);
+                }
+            }
         }
     }
 }
