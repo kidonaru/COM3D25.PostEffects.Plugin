@@ -41,6 +41,15 @@ namespace COM3D25.PostEffects.Plugin
             window.ShowTimelineMode();
         }
 
+        /// <summary>
+        /// 「既定」のプリセットを読み込む。SceneEditor を閉じたタイミングで呼ばれる。
+        /// 読込に失敗したら false を返す
+        /// </summary>
+        public static bool LoadStartupPreset()
+        {
+            return PresetManager.instance.LoadStartupPreset();
+        }
+
         // 各系統の上限。実体側のシェーダーバッファ上限と同値
         public static int GetMaxParaffinCount()
         {

@@ -59,7 +59,13 @@ namespace COM3D25.PostEffects.Plugin
             UpdatePresetNames();
 
             // 起動時は指定プリセットから始める (前回終了時の編集内容は引き継がない)
-            LoadPreset(config.startupPresetName);
+            LoadStartupPreset();
+        }
+
+        /// <summary>「既定」に指定されたプリセット (起動時プリセット) を読み込む</summary>
+        public bool LoadStartupPreset()
+        {
+            return LoadPreset(config.startupPresetName);
         }
 
         private static string GetPresetPath(string name)
