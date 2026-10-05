@@ -12,6 +12,7 @@ namespace COM3D25.PostEffects.Plugin
         public float position = 0.25f;
         public float smoothness = 0.001f;
         public bool vertical = false;
+        public bool excludeCharacters = false;
     }
 
     public class FilmicLetterBoxController : EffectControllerBase<FilmicLetterBoxEffect, FilmicLetterBoxSetting>
@@ -43,6 +44,7 @@ namespace COM3D25.PostEffects.Plugin
             component.position = setting.position;
             component.smoothness = setting.smoothness;
             component.vertical = setting.vertical;
+            component.excludeCharacters = setting.excludeCharacters;
         }
 
         protected override void Capture(FilmicLetterBoxEffect component)
@@ -55,6 +57,7 @@ namespace COM3D25.PostEffects.Plugin
             c.position = component.position;
             c.smoothness = component.smoothness;
             c.vertical = component.vertical;
+            c.excludeCharacters = component.excludeCharacters;
         }
 
         protected override void RestoreSetting(FilmicLetterBoxEffect component)
@@ -66,6 +69,7 @@ namespace COM3D25.PostEffects.Plugin
             component.position = c.position;
             component.smoothness = c.smoothness;
             component.vertical = c.vertical;
+            component.excludeCharacters = c.excludeCharacters;
         }
 
         public override void DrawContent(GUIView view)
@@ -86,6 +90,12 @@ namespace COM3D25.PostEffects.Plugin
             view.DrawToggle("左右に出す", setting.vertical, 250, 20, value =>
             {
                 setting.vertical = value;
+                SetDirty();
+            });
+
+            view.DrawToggle("キャラの後ろに出す", setting.excludeCharacters, 250, 20, value =>
+            {
+                setting.excludeCharacters = value;
                 SetDirty();
             });
         }

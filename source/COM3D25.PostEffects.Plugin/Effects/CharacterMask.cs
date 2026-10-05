@@ -211,6 +211,9 @@ namespace COM3D25.PostEffects.Plugin
         // マスク境界の膨張幅 (px)。ブラー系エフェクトはキャラ輪郭への背景ボケ回り込み対策で正値にする
         protected virtual float maskSpread => 0f;
 
+        // マスクに背景の深度を入れ、背景に隠れたキャラ部分を除外対象から外す。不透明に覆うエフェクトで穴が開くのを防ぐ
+        protected virtual bool maskIncludeOccluders => false;
+
         // エフェクト本体の描画を実装する
         protected abstract void RenderEffect(RenderTexture source, RenderTexture destination);
 
@@ -218,7 +221,7 @@ namespace COM3D25.PostEffects.Plugin
         {
             if (excludeCharacters)
             {
-                CharacterMask.Render(GetComponent<Camera>());
+                CharacterMask.Render(GetComponent<Camera>(), maskIncludeOccluders);
             }
         }
 

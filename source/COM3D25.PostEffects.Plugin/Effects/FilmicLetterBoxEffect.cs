@@ -5,9 +5,10 @@ namespace COM3D25.PostEffects.Plugin
     /// <summary>
     /// 画面の上下 (または左右) を帯で覆うシネスコ風レターボックス。
     /// 2.5 のゲームアセンブリに型が存在しないため、SceneCapture 同梱実装を移植したもの
-    /// (シェーダーは filmic バンドルの filmiceletterboxshader)
+    /// (シェーダーは filmic バンドルの filmiceletterboxshader)。
+    /// excludeCharacters を有効にすると帯をキャラの後ろに出す
     /// </summary>
-    public class FilmicLetterBoxEffect : MonoBehaviour
+    public class FilmicLetterBoxEffect : CharacterMaskableEffect
     {
         public Shader shader;
 
@@ -20,6 +21,9 @@ namespace COM3D25.PostEffects.Plugin
 
         private Material _material;
 
+        // 帯は不透明なので、背景に隠れたキャラの形で帯が欠けないようにする
+        protected override bool maskIncludeOccluders => true;
+
         private void OnDisable()
         {
             if (_material != null)
@@ -29,7 +33,7 @@ namespace COM3D25.PostEffects.Plugin
             }
         }
 
-        private void OnRenderImage(RenderTexture source, RenderTexture destination)
+        protected override void RenderEffect(RenderTexture source, RenderTexture destination)
         {
             if (shader == null || !shader.isSupported)
             {
