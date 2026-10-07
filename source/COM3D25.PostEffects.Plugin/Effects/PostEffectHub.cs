@@ -165,6 +165,12 @@ namespace COM3D25.PostEffects.Plugin
 
 		void OnPreCull()
 		{
+			// 全体の無効化・一時停止中はマスク描画 (Camera.Render を伴う) も省く
+			if (!PostEffectManager.instance.isApplying)
+			{
+				return;
+			}
+
 			// CharacterMask は Camera.Render を伴うため OnPreCull でしか描画できない。
 			// needsCharacterMask は設定値ベースの判定なのでフレーム遅れなし
 			foreach (var model in _models)
@@ -189,6 +195,14 @@ namespace COM3D25.PostEffects.Plugin
 			{
 				_capturedDepthMode = context.camera.depthTextureMode;
 				_depthModeCaptured = true;
+			}
+
+			// パラフィン・距離フォグ・リムライトの Restore は共有の Hub を止めないため、
+			// 全体の無効化・一時停止中はここで描画を打ち切る (Clear 済みなので前フレームの描画も残らない)
+			if (!PostEffectManager.instance.isApplying)
+			{
+				context.camera.depthTextureMode = _capturedDepthMode;
+				return;
 			}
 
 			bool anyActive = false;

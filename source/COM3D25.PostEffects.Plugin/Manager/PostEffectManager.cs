@@ -13,6 +13,13 @@ namespace COM3D25.PostEffects.Plugin
         // 各エフェクトの有効状態は保ったまま適用だけを止めるため、保存対象にはしない
         public bool effectsEnabled = true;
 
+        // 外部 (SceneEditor の GameView の「エフェクト」トグル) からの一時停止。
+        // ユーザー操作の effectsEnabled と取り合わないよう別に持つ。保存しない
+        public bool suspended = false;
+
+        /// <summary>エフェクトを適用してよいか。Hub 系の描画判定もこれに従う</summary>
+        public bool isApplying => effectsEnabled && !suspended;
+
         // 前フレームで適用していたかをコントローラごとに記録し、無効化されたフレームで復元する
         private HashSet<EffectControllerBase> _appliedControllers = new HashSet<EffectControllerBase>();
 
@@ -267,7 +274,7 @@ namespace COM3D25.PostEffects.Plugin
             {
                 try
                 {
-                    if (effectsEnabled && controller.effectEnabled)
+                    if (isApplying && controller.effectEnabled)
                     {
                         controller.Apply();
                         _appliedControllers.Add(controller);

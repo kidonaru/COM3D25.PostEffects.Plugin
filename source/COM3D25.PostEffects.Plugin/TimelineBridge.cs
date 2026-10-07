@@ -50,6 +50,20 @@ namespace COM3D25.PostEffects.Plugin
             return PresetManager.instance.LoadStartupPreset();
         }
 
+        /// <summary>
+        /// エフェクトの適用を一時停止する。SceneEditor の GameView で「エフェクト」を OFF にしたときに呼ばれる。
+        /// 各エフェクトの設定値は変えない
+        /// </summary>
+        public static void SetSuspended(bool suspended)
+        {
+            PostEffectManager.instance.suspended = suspended;
+        }
+
+        public static bool IsSuspended()
+        {
+            return PostEffectManager.instance.suspended;
+        }
+
         // 各系統の上限。実体側のシェーダーバッファ上限と同値
         public static int GetMaxParaffinCount()
         {
