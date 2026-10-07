@@ -59,11 +59,6 @@ namespace COM3D25.PostEffects.Plugin
             PostEffectManager.instance.suspended = suspended;
         }
 
-        public static bool IsSuspended()
-        {
-            return PostEffectManager.instance.suspended;
-        }
-
         // 各系統の上限。実体側のシェーダーバッファ上限と同値
         public static int GetMaxParaffinCount()
         {
